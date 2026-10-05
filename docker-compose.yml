@@ -1,0 +1,109 @@
+x-backend-env: &backend-env
+  ENVIRONMENT: ${ENVIRONMENT:-development}
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-medqueue}:${POSTGRES_PASSWORD:-medqueue_dev_pw}@db:5432/${POSTGRES_DB:-medqueue_ai}
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-this-to-a-random-64-char-hex-secret-before-deploying}
+  JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+  ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+  REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-30}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+  BACKEND_HOST: 0.0.0.0
+  BACKEND_PORT: 8000
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+  STORAGE_LOCAL_PATH: /app/storage/medical_documents
+  MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-15}
+  ALLOWED_UPLOAD_EXTENSIONS: ${ALLOWED_UPLOAD_EXTENSIONS:-.pdf,.png,.jpg,.jpeg}
+  EMAIL_BACKEND: ${EMAIL_BACKEND:-console}
+  EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-no-reply@medqueue.ai}
+  EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-MedQueue AI}
+  SMTP_HOST: ${SMTP_HOST:-localhost}
+  SMTP_PORT: ${SMTP_PORT:-1025}
+  SMTP_USERNAME: ${SMTP_USERNAME:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
+  SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+  MAILGUN_API_KEY: ${MAILGUN_API_KEY:-}
+  MAILGUN_DOMAIN: ${MAILGUN_DOMAIN:-}
+  AI_ENABLED: ${AI_ENABLED:-false}
+  AI_PROVIDER: ${AI_PROVIDER:-ollama}
+  OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+  OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+  AI_PROMPT_VERSION: ${AI_PROMPT_VERSION:-v1}
+  OCR_ENABLED: ${OCR_ENABLED:-false}
+  OCR_ENGINE: ${OCR_ENGINE:-tesseract}
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: medqueue-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-medqueue}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medqueue_dev_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-medqueue_ai}
+    ports:
+      - "5432:5432"
+    volumes:
+      - medqueue_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medqueue} -d ${POSTGRES_DB:-medqueue_ai}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: medqueue-backend
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - medqueue_storage:/app/storage
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: medqueue-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+
+  # Optional: local LLM runtime for AI-assisted summaries.
+  # The backend and frontend run fine without this service (AI_ENABLED=false).
+  # Start it explicitly with: docker compose --profile ai up ollama
+  ollama:
+    image: ollama/ollama:latest
+    container_name: medqueue-ollama
+    restart: unless-stopped
+    profiles: ["ai"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - medqueue_ollama_data:/root/.ollama
+
+volumes:
+  medqueue_pg_data:
+  medqueue_storage:
+  medqueue_ollama_data:

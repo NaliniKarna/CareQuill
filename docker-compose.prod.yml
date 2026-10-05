@@ -1,0 +1,74 @@
+# Production-oriented compose file: no bind mounts, no --reload, frontend
+# built as a real Next.js production bundle. Assumes a `.env.production`
+# file (copy `.env.production.example` and fill in real values) and that
+# you provide your own Postgres (this still includes a "db" service for a
+# simple single-host deployment; swap it for a managed database by removing
+# this service and pointing DATABASE_URL at it instead).
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# See docs/deployment.md for the full walkthrough, including the managed-
+# database and reverse-proxy/TLS variants.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: medqueue-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-medqueue}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-medqueue_ai}
+    volumes:
+      - medqueue_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medqueue} -d ${POSTGRES_DB:-medqueue_ai}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # No published port: only the backend service needs to reach this, and
+    # only inside the compose network. Expose it explicitly if you need
+    # external DB access (e.g. for migrations from your own machine).
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: medqueue-backend
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - medqueue_storage:/app/storage
+    # Runs migrations then starts uvicorn WITHOUT --reload (unlike the dev
+    # compose file) -- this is the actual production entrypoint.
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}
+    container_name: medqueue-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    # No source bind mounts -- this runs the built production bundle from
+    # the image, produced by the Dockerfile's `production` target.
+
+volumes:
+  medqueue_pg_data:
+  medqueue_storage:
