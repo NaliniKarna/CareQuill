@@ -62,13 +62,13 @@ export function PrivacySettingsForm() {
         )}
 
         <Alert>
-          <AlertTitle>About AI in MedQueue AI</AlertTitle>
+          <AlertTitle>About AI in CareQuill</AlertTitle>
           <AlertDescription>
             AI-extracted or AI-generated information is always a suggestion you must review and
-            confirm before it becomes part of your verified record. MedQueue AI does not diagnose
+            confirm before it becomes part of your verified record. CareQuill does not diagnose
             conditions, prescribe treatment, or replace professional medical advice. See your{" "}
-            <Link href="/ai-summary" className="text-primary hover:underline">
-              AI summary page
+            <Link href="/record-summary" className="text-primary hover:underline">
+              Record Summary page
             </Link>{" "}
             for the review step.
           </AlertDescription>

@@ -67,7 +67,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function MedicalRecordsView() {
+export function MedicalRecordsView({ embedded = false }: { embedded?: boolean } = {}) {
   const queryClient = useQueryClient();
   const [category, setCategory] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -124,7 +124,8 @@ export function MedicalRecordsView() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Medical records"
+        compact={embedded}
+        title={embedded ? "Documents" : "Medical records"}
         description="Upload and review your lab reports, prescriptions, and other documents."
         action={
           <Button onClick={() => setUploadOpen(true)}>

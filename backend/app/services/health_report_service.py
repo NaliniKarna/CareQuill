@@ -142,7 +142,7 @@ class HealthReportService:
         generator = get_pdf_generator()
         pdf_bytes = await generator.generate_health_summary_pdf(structured_data=structured_data)
         pdf_filename = self.build_filename()
-        report_name = f"MedQueue AI Health Summary — {date.today().isoformat()}"
+        report_name = f"CareQuill Health Summary — {date.today().isoformat()}"
 
         appointment_display = None
         if ctx.appointment:

@@ -5,19 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  UserRound,
-  Pill,
   FileStack,
   CalendarClock,
-  Contact,
   Sparkles,
   Settings,
   LogOut,
-  ShieldAlert,
-  HeartPulse,
-  History,
-  FileText,
-  Bell,
+  NotebookPen,
   Menu,
 } from "lucide-react";
 
@@ -30,23 +23,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { BrandLogo } from "@/components/shared/brand";
 import { NotificationBell } from "@/features/notifications/notification-bell";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, enabled: true },
-  { href: "/profile", label: "Health Profile", icon: UserRound, enabled: true },
-  { href: "/medications", label: "Medications", icon: Pill, enabled: true },
   { href: "/medical-records", label: "Medical Records", icon: FileStack, enabled: true },
-  { href: "/conditions", label: "Conditions", icon: HeartPulse, enabled: true },
-  { href: "/allergies", label: "Allergies", icon: ShieldAlert, enabled: true },
   { href: "/appointments", label: "Appointments", icon: CalendarClock, enabled: true },
-  { href: "/doctors", label: "Doctor Contacts", icon: Contact, enabled: true },
-  { href: "/ai-summary", label: "AI Summary", icon: Sparkles, enabled: true },
-  { href: "/reports", label: "Reports", icon: FileText, enabled: true },
-  { href: "/timeline", label: "Timeline", icon: History, enabled: true },
-  { href: "/notifications", label: "Notifications", icon: Bell, enabled: true },
+  { href: "/record-summary", label: "Record Summary", icon: Sparkles, enabled: true },
+  { href: "/journal", label: "Journal", icon: NotebookPen, enabled: true },
   { href: "/settings", label: "Settings", icon: Settings, enabled: true },
 ];
 
@@ -93,14 +80,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const initials = user?.email?.slice(0, 2).toUpperCase() ?? "MQ";
+  const initials = user?.email?.slice(0, 2).toUpperCase() ?? "CQ";
 
   return (
     <div className="flex min-h-svh">
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card px-4 py-6 md:flex">
         <div className="mb-8 flex items-center justify-between px-2">
-          <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
-            MedQueue AI
+          <Link href="/dashboard" aria-label="CareQuill home">
+            <BrandLogo markClassName="h-9" />
           </Link>
           <NotificationBell />
         </div>
@@ -132,7 +119,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               <Menu className="size-5" />
             </Button>
-            <span className="text-lg font-semibold tracking-tight">MedQueue AI</span>
+            <BrandLogo markClassName="h-7" textClassName="text-base" />
           </div>
           <div className="flex items-center gap-1">
             <NotificationBell />

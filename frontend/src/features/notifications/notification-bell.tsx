@@ -77,7 +77,7 @@ export function NotificationBell() {
         </div>
         <Separator className="my-2" />
         <Button asChild variant="ghost" size="sm" className="w-full" onClick={() => setOpen(false)}>
-          <Link href="/notifications">View all notifications</Link>
+          <Link href="/settings?tab=notifications">View all notifications</Link>
         </Button>
       </PopoverContent>
     </Popover>

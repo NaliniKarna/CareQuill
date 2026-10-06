@@ -76,9 +76,9 @@ class AuthService:
         verify_url = f"{settings.frontend_base_url}/verify-email?token={raw_token}"
         return EmailMessage(
             to=user.email,
-            subject="Verify your MedQueue AI account",
+            subject="Verify your CareQuill account",
             html_body=(
-                f"<p>Welcome to MedQueue AI. Please verify your email by visiting:</p>"
+                f"<p>Welcome to CareQuill. Please verify your email by visiting:</p>"
                 f"<p><a href='{verify_url}'>{verify_url}</a></p>"
                 f"<p>This link expires in 48 hours.</p>"
             ),
@@ -157,7 +157,7 @@ class AuthService:
         reset_url = f"{settings.frontend_base_url}/reset-password?token={raw_token}"
         return EmailMessage(
             to=user.email,
-            subject="Reset your MedQueue AI password",
+            subject="Reset your CareQuill password",
             html_body=(
                 f"<p>We received a request to reset your password. Visit:</p>"
                 f"<p><a href='{reset_url}'>{reset_url}</a></p>"

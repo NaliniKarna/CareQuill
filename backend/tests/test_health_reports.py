@@ -133,7 +133,7 @@ async def test_share_happy_path_sends_email_and_logs(client, unique_email, monke
     body = resp.json()
     assert body["status"] == "sent"
     assert body["doctor_email"] == "patel@example.com"
-    assert body["report_name"].startswith("MedQueue AI Health Summary")
+    assert body["report_name"].startswith("CareQuill Health Summary")
 
     assert len(sender.sent) == 1
     message = sender.sent[0]

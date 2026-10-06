@@ -1,21 +1,41 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Contact, Mail, Pencil, Phone, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, Contact, Mail, Pencil, Phone, Plus, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { EmptyState, ErrorState, ListSkeleton, PageHeader } from "@/components/shared/page-states";
+import { EmptyState, ErrorState, PageHeader } from "@/components/shared/page-states";
+import { Skeleton } from "@/components/ui/skeleton";
 import { doctorService } from "@/services/doctor-service";
 import { getApiErrorMessage } from "@/lib/api-client";
 import type { DoctorContact } from "@/types/api";
 
 import { DoctorFormDialog } from "./doctor-form-dialog";
 
-export function DoctorsView() {
+export function doctorInitials(name: string): string {
+  const parts = name
+    .replace(/^(dr\.?|prof\.?)\s+/i, "")
+    .split(/\s+/)
+    .filter(Boolean);
+  return ((parts[0]?.[0] ?? "?") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+
+export function DoctorAvatar({ name, className = "size-12 text-base" }: { name: string; className?: string }) {
+  return (
+    <div
+      className={`flex shrink-0 items-center justify-center rounded-full bg-accent font-semibold text-accent-foreground ${className}`}
+    >
+      {doctorInitials(name)}
+    </div>
+  );
+}
+
+export function DoctorsView({ summaryId }: { summaryId?: string } = {}) {
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<DoctorContact | null>(null);
@@ -30,6 +50,7 @@ export function DoctorsView() {
     mutationFn: (id: string) => doctorService.remove(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["doctors"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast.success("Doctor contact removed.");
       setDeleting(null);
     },
@@ -45,11 +66,15 @@ export function DoctorsView() {
     setFormOpen(true);
   };
 
+  const profileHref = (id: string) =>
+    `/appointments?tab=doctors&doctor=${id}${summaryId ? `&summary=${summaryId}` : ""}`;
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <PageHeader
-        title="Doctor contacts"
-        description="Doctors you can book appointments with, or share your health summary with."
+        compact
+        title="Doctors"
+        description="Doctors you see. Open a profile to book a visit or share a health report."
         action={
           <Button onClick={openAdd}>
             <Plus /> Add doctor
@@ -57,14 +82,27 @@ export function DoctorsView() {
         }
       />
 
-      {isLoading && <ListSkeleton />}
-      {isError && <ErrorState description="Couldn't load your doctor contacts." onRetry={() => refetch()} />}
+      {summaryId && (
+        <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-accent/60 px-4 py-3 text-sm">
+          <Send className="size-4 shrink-0 text-primary" />
+          <p>Choose a doctor below to share your reviewed Record Summary with.</p>
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-36" />
+          ))}
+        </div>
+      )}
+      {isError && <ErrorState description="Couldn't load your doctors." onRetry={() => refetch()} />}
 
       {data && data.length === 0 && (
         <EmptyState
           icon={Contact}
-          title="No doctor contacts yet"
-          description="Add a doctor to book appointments and share summaries with them."
+          title="No doctors added yet"
+          description="Add a doctor to book appointments and share health reports with them."
           action={
             <Button onClick={openAdd}>
               <Plus /> Add doctor
@@ -74,42 +112,50 @@ export function DoctorsView() {
       )}
 
       {data && data.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {data.map((doctor) => (
-            <Card key={doctor.id}>
-              <CardContent className="flex items-start justify-between gap-4">
-                <div className="flex flex-col gap-1">
-                  <p className="font-medium">{doctor.name}</p>
-                  {doctor.specialization && (
-                    <p className="text-sm text-muted-foreground">{doctor.specialization}</p>
-                  )}
-                  {doctor.clinic_name && (
-                    <p className="text-sm text-muted-foreground">{doctor.clinic_name}</p>
-                  )}
-                  {doctor.email && (
-                    <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Mail className="size-3.5" /> {doctor.email}
+            <Card key={doctor.id} className="group transition-colors hover:border-primary/40">
+              <CardContent className="flex h-full flex-col gap-4">
+                <div className="flex items-start gap-3">
+                  <DoctorAvatar name={doctor.name} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{doctor.name}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {doctor.specialization || "General"}
+                      {doctor.clinic_name ? ` · ${doctor.clinic_name}` : ""}
                     </p>
-                  )}
-                  {doctor.phone && (
-                    <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Phone className="size-3.5" /> {doctor.phone}
-                    </p>
-                  )}
+                  </div>
+                  <div className="flex shrink-0 gap-0.5">
+                    <Button variant="ghost" size="icon" className="size-8" aria-label={`Edit ${doctor.name}`} onClick={() => openEdit(doctor)}>
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon" className="size-8"
+                      aria-label={`Remove ${doctor.name}`}
+                      onClick={() => setDeleting(doctor)}
+                    >
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex shrink-0 gap-1">
-                  <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => openEdit(doctor)}>
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Delete"
-                    onClick={() => setDeleting(doctor)}
-                  >
-                    <Trash2 className="size-4 text-destructive" />
-                  </Button>
+
+                <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                  <p className="flex items-center gap-2 truncate">
+                    <Mail className="size-3.5 shrink-0" />
+                    <span className="truncate">{doctor.email || "No email on file"}</span>
+                  </p>
+                  <p className="flex items-center gap-2 truncate">
+                    <Phone className="size-3.5 shrink-0" />
+                    <span className="truncate">{doctor.phone || "No phone on file"}</span>
+                  </p>
                 </div>
+
+                <Button asChild variant="outline" size="sm" className="mt-auto justify-between">
+                  <Link href={profileHref(doctor.id)}>
+                    View profile <ChevronRight className="size-4" />
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
           ))}
@@ -121,8 +167,8 @@ export function DoctorsView() {
       <ConfirmDialog
         open={Boolean(deleting)}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title="Remove this doctor contact?"
-        description={`This will permanently remove "${deleting?.name}" from your contacts. Any existing appointments will keep their date, but lose the doctor link. This cannot be undone.`}
+        title="Remove this doctor?"
+        description={`This will permanently remove "${deleting?.name}" from your contacts. Existing appointments keep their date but lose the doctor link. This cannot be undone.`}
         confirmLabel="Remove"
         isLoading={deleteMutation.isPending}
         onConfirm={() => deleting && deleteMutation.mutate(deleting.id)}

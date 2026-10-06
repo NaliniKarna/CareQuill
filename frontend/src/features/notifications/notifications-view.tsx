@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
 
-import { EmptyState, ErrorState, ListSkeleton, PageHeader } from "@/components/shared/page-states";
+import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/page-states";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { notificationService } from "@/services/notification-service";
 
@@ -29,12 +29,7 @@ export function NotificationsView() {
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Notifications"
-        description="Updates about your AI summaries, documents, and shared reports, plus upcoming appointments and medication reminders."
-      />
-
+    <div className="flex flex-col gap-4">
       {isLoading && <ListSkeleton />}
       {isError && (
         <ErrorState description="Couldn't load your notifications." onRetry={() => refetch()} />

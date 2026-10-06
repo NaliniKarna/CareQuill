@@ -38,7 +38,7 @@ from app.services.entity_extraction_service import clean_text, empty_entities, e
 IMAGING_CATEGORIES = frozenset({"xray", "mri", "ct_scan"})
 
 IMAGING_NOTICE = (
-    "This is a medical image (for example an X-ray, MRI or CT scan). MedQueue AI "
+    "This is a medical image (for example an X-ray, MRI or CT scan). CareQuill "
     "keeps it exactly as uploaded and does not interpret images or look for "
     "findings - OCR can only read printed text, not anatomy. To get the clinical "
     "content into your record, upload the radiologist's written report as well "

@@ -39,7 +39,7 @@ class EmailLog(UUIDPrimaryKeyMixin, Base):
     appointment_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     appointment_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
     subject: Mapped[str] = mapped_column(String(300), nullable=False)
-    # Human-readable label for what was sent, e.g. "MedQueue AI Health
+    # Human-readable label for what was sent, e.g. "CareQuill Health
     # Summary — 2026-09-25". Null for the older AI-summary-only share flow.
     report_name: Mapped[str | None] = mapped_column(String(300), nullable=True)
     # Which sections/flags were included in a health-report share, recorded

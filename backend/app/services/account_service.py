@@ -44,6 +44,7 @@ from app.models.document_extraction import DocumentExtraction
 from app.models.email_log import EmailLog
 from app.models.health_profile import HealthProfile
 from app.models.health_snapshot import HealthSnapshot
+from app.models.journal_entry import JournalEntry
 from app.models.medical_condition import MedicalCondition
 from app.models.medical_document import MedicalDocument
 from app.models.medication import Medication
@@ -71,6 +72,7 @@ _OWNED_TABLES: list[tuple[str, type, str]] = [
     ("doctor_contacts", DoctorContact, "patient_id"),
     ("appointments", Appointment, "patient_id"),
     ("timeline_notes", TimelineNote, "patient_id"),
+    ("journal_entries", JournalEntry, "patient_id"),
     ("health_snapshots", HealthSnapshot, "patient_id"),
     ("ai_summaries", AISummary, "patient_id"),
     ("emails_sent", EmailLog, "patient_id"),

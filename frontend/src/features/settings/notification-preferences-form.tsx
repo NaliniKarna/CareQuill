@@ -27,8 +27,8 @@ const PREF_LABELS: Array<{ key: keyof NotificationPrefs; label: string; descript
   },
   {
     key: "ai_summary_ready",
-    label: "AI summary ready",
-    description: "Notify me when a new AI summary has been generated.",
+    label: "Record Summary ready",
+    description: "Notify me when a new Record Summary has been generated.",
   },
   {
     key: "document_processed",

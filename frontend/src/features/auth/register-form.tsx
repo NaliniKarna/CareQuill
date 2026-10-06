@@ -41,7 +41,7 @@ export function RegisterForm() {
     registerUser.mutate(
       { email: values.email, password: values.password },
       {
-        onSuccess: () => toast.success("Account created. Welcome to MedQueue AI."),
+        onSuccess: () => toast.success("Account created. Welcome to CareQuill."),
         onError: (error) => toast.error(getApiErrorMessage(error, "Unable to create account.")),
       }
     );
@@ -105,7 +105,7 @@ export function RegisterForm() {
       </Button>
 
       <p className="text-center text-xs text-muted-foreground">
-        By creating an account you agree that MedQueue AI is an organizational tool and
+        By creating an account you agree that CareQuill is an organizational tool and
         does not provide medical advice, diagnosis, or treatment.
       </p>
     </form>

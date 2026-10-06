@@ -142,7 +142,7 @@ class SelectiveGZipMiddleware:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(
-        "MedQueue AI backend starting | environment=%s ai_enabled=%s ocr_enabled=%s",
+        "CareQuill backend starting | environment=%s ai_enabled=%s ocr_enabled=%s",
         settings.environment,
         settings.ai_enabled,
         settings.ocr_enabled,
@@ -157,13 +157,13 @@ async def lifespan(app: FastAPI):
     yield
     if recovery_task is not None and not recovery_task.done():
         recovery_task.cancel()
-    logger.info("MedQueue AI backend shutting down")
+    logger.info("CareQuill backend shutting down")
 
 
 app = FastAPI(
     title=settings.project_name,
     description=(
-        "Med AI / MedQueue AI backend API. Designed with privacy and security "
+        "CareQuill backend API. Designed with privacy and security "
         "principles appropriate for handling sensitive health information. "
         "This application does not diagnose conditions, prescribe treatment, "
         "or act as an autonomous medical decision-maker."

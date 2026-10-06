@@ -37,7 +37,7 @@ const SECTION_LABEL: Record<string, string> = {
   medications: "Medications",
   timeline: "Timeline",
   patient_notes: "Patient notes",
-  ai_summary: "AI summary",
+  ai_summary: "Record Summary",
 };
 
 interface SectionFlags {
@@ -58,10 +58,17 @@ const INITIAL_SECTIONS: SectionFlags = {
   aiSummary: false,
 };
 
-export function ReportBuilderView({ initialAiSummaryId }: { initialAiSummaryId?: string }) {
+export function ReportBuilderView({
+  initialAiSummaryId,
+  fixedDoctorId,
+}: {
+  initialAiSummaryId?: string;
+  /** When set, the report is for this doctor and the doctor picker is hidden. */
+  fixedDoctorId?: string;
+}) {
   const queryClient = useQueryClient();
 
-  const [doctorId, setDoctorId] = useState("");
+  const [doctorId, setDoctorId] = useState(fixedDoctorId ?? "");
   const [appointmentId, setAppointmentId] = useState("");
   const [sections, setSections] = useState<SectionFlags>(
     initialAiSummaryId ? { ...INITIAL_SECTIONS, aiSummary: true } : INITIAL_SECTIONS
@@ -130,7 +137,7 @@ export function ReportBuilderView({ initialAiSummaryId }: { initialAiSummaryId?:
 
   function validate(): string | null {
     if (!doctorId) return "Choose a doctor to build a report for.";
-    if (sections.aiSummary && !aiSummaryId) return "Choose which AI summary to include.";
+    if (sections.aiSummary && !aiSummaryId) return "Choose which Record Summary to include.";
     const anySection =
       sections.conditions ||
       sections.allergies ||
@@ -194,6 +201,15 @@ export function ReportBuilderView({ initialAiSummaryId }: { initialAiSummaryId?:
           <CardDescription>Who is this report for?</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
+          {fixedDoctorId ? (
+            <p className="text-sm font-medium">
+              {selectedDoctor?.name ?? "Loading..."}
+              {selectedDoctor?.email && (
+                <span className="font-normal text-muted-foreground"> ({selectedDoctor.email})</span>
+              )}
+            </p>
+          ) : (
+            <>
           <Label htmlFor="report-doctor">Doctor</Label>
           <Select
             value={doctorId || undefined}
@@ -214,15 +230,17 @@ export function ReportBuilderView({ initialAiSummaryId }: { initialAiSummaryId?:
               ))}
             </SelectContent>
           </Select>
+            </>
+          )}
           {doctors?.length === 0 && (
             <p className="text-xs text-muted-foreground">
-              You don&apos;t have any doctor contacts yet. Add one from the Doctor Contacts page.
+              You don&apos;t have any doctor contacts yet. Add one from the Doctors tab on the Appointments page.
             </p>
           )}
           {selectedDoctor && !selectedDoctor.email && (
             <p className="text-xs text-warning-foreground">
               This doctor has no email on file, so a report can be previewed and generated but not
-              shared. Add an email from the Doctor Contacts page to enable sharing.
+              shared. Add an email to this doctor&apos;s profile to enable sharing.
             </p>
           )}
         </CardContent>
@@ -321,7 +339,7 @@ export function ReportBuilderView({ initialAiSummaryId }: { initialAiSummaryId?:
             </label>
             {sections.aiSummary && (
               <div className="flex flex-col gap-2 pl-6">
-                <Label htmlFor="report-summary">Which summary?</Label>
+                <Label htmlFor="report-summary">Which Record Summary?</Label>
                 <Select
                   value={aiSummaryId || undefined}
                   onValueChange={(v) => {
@@ -330,7 +348,7 @@ export function ReportBuilderView({ initialAiSummaryId }: { initialAiSummaryId?:
                   }}
                 >
                   <SelectTrigger id="report-summary">
-                    <SelectValue placeholder="Choose a reviewed summary" />
+                    <SelectValue placeholder="Choose a reviewed Record Summary" />
                   </SelectTrigger>
                   <SelectContent>
                     {eligibleSummaries.map((s) => (
@@ -342,8 +360,8 @@ export function ReportBuilderView({ initialAiSummaryId }: { initialAiSummaryId?:
                 </Select>
                 {eligibleSummaries.length === 0 && (
                   <p className="text-xs text-muted-foreground">
-                    You don&apos;t have any reviewed AI summaries yet. Generate and confirm one from
-                    the AI Summary page first.
+                    You don&apos;t have any reviewed Record Summaries yet. Generate and confirm one from
+                    the Record Summary page first.
                   </p>
                 )}
                 {pendingSummaryCount > 0 && (
@@ -465,7 +483,7 @@ export function ReportBuilderView({ initialAiSummaryId }: { initialAiSummaryId?:
               )}
               {preview.ai_summary_text && (
                 <div>
-                  <p className="font-medium">AI summary</p>
+                  <p className="font-medium">Record Summary</p>
                   <p className="whitespace-pre-wrap text-muted-foreground">
                     {preview.ai_summary_text}
                   </p>
@@ -475,8 +493,8 @@ export function ReportBuilderView({ initialAiSummaryId }: { initialAiSummaryId?:
               <div className="flex flex-wrap gap-2 pt-2">
                 {sections.aiSummary && aiSummaryId && !summaryAlreadyShared && (
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/ai-summary?id=${aiSummaryId}`}>
-                      <Pencil /> Edit summary
+                    <Link href={`/record-summary?id=${aiSummaryId}`}>
+                      <Pencil /> Edit Record Summary
                     </Link>
                   </Button>
                 )}

@@ -11,7 +11,7 @@ import "./globals.css";
 // environments, while still looking clean on every OS.
 
 export const metadata: Metadata = {
-  title: "MedQueue AI",
+  title: "CareQuill",
   description:
     "A patient-focused AI-powered health record and doctor communication platform.",
 };

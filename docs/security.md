@@ -1,6 +1,6 @@
 # Security
 
-MedQueue AI handles sensitive health information. This document describes
+CareQuill handles sensitive health information. This document describes
 the security posture as actually implemented and tested, not aspirational
 goals. **This project does not claim HIPAA, GDPR, or any other formal
 compliance certification** — it follows sound engineering practice

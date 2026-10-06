@@ -12,16 +12,28 @@ export function PageHeader({
   title,
   description,
   action,
+  compact = false,
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
+  /** Section heading inside a page that already has its own h1. */
+  compact?: boolean;
 }) {
+  const Heading = compact ? "h2" : "h1";
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {description && <p className="text-muted-foreground">{description}</p>}
+        <Heading
+          className={compact ? "text-lg font-semibold tracking-tight" : "text-2xl font-semibold tracking-tight"}
+        >
+          {title}
+        </Heading>
+        {description && (
+          <p className={compact ? "text-sm text-muted-foreground" : "text-muted-foreground"}>
+            {description}
+          </p>
+        )}
       </div>
       {action}
     </div>

@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 
 import { ListSkeleton } from "@/components/shared/page-states";
-import { ReportsView } from "@/features/reports/reports-view";
+import { AISummaryView } from "@/features/ai-summary/ai-summary-view";
 
-export default function ReportsPage() {
+export default function AISummaryPage() {
   return (
     <Suspense fallback={<ListSkeleton />}>
-      <ReportsView />
+      <AISummaryView />
     </Suspense>
   );
 }

@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     # --- General ---
     environment: Literal["development", "test", "production"] = "development"
-    project_name: str = "MedQueue AI"
+    project_name: str = "CareQuill"
     api_v1_prefix: str = "/api/v1"
 
     # --- Database ---
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     # --- Email ---
     email_backend: Literal["smtp", "sendgrid", "mailgun", "console"] = "console"
     email_from_address: str = "no-reply@medqueue.ai"
-    email_from_name: str = "MedQueue AI"
+    email_from_name: str = "CareQuill"
 
     smtp_host: str = "localhost"
     smtp_port: int = 1025

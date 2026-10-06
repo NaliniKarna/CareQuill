@@ -1,6 +1,6 @@
-# MedQueue AI — Backend
+# CareQuill — Backend
 
-FastAPI backend for MedQueue AI. See the [repo-root README](../README.md)
+FastAPI backend for CareQuill. See the [repo-root README](../README.md)
 for full setup instructions (Docker Compose and manual dev). This file is
 a quick reference for working in this directory specifically.
 

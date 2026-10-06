@@ -1,6 +1,6 @@
 # Architecture
 
-MedQueue AI is a **modular monolith**, not a microservices system. One
+CareQuill is a **modular monolith**, not a microservices system. One
 backend deployment, one frontend deployment, one database. The
 "modular" part is about internal boundaries, not separate services.
 

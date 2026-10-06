@@ -14,6 +14,7 @@ from app.api.v1 import (
     email_logs,
     health,
     health_snapshots,
+    journal,
     medications,
     notifications,
     preferences,
@@ -35,6 +36,7 @@ api_router.include_router(conditions.router)
 api_router.include_router(doctors.router)
 api_router.include_router(appointments.router)
 api_router.include_router(timeline.router)
+api_router.include_router(journal.router)
 api_router.include_router(health_snapshots.router)
 api_router.include_router(ai_summaries.router)
 api_router.include_router(reports.router)

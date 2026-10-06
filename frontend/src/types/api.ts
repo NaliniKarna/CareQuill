@@ -367,41 +367,6 @@ export interface DocumentExtraction {
   updated_at: string;
 }
 
-// --- Timeline ------------------------------------------------------------
-
-export type TimelineEntryType =
-  | "condition"
-  | "medication"
-  | "document"
-  | "appointment"
-  | "note"
-  | "ai_extracted";
-
-export type TimelineTag = "VERIFIED" | "PATIENT_PROVIDED" | "AI_EXTRACTED" | "UNVERIFIED";
-
-export interface TimelineEntry {
-  date: string;
-  type: TimelineEntryType;
-  title: string;
-  detail: string | null;
-  source_id: string;
-  tag: TimelineTag;
-}
-
-export interface TimelineNote {
-  id: string;
-  patient_id: string;
-  note_text: string;
-  event_date: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TimelineNoteInput {
-  note_text: string;
-  event_date: string;
-}
-
 // --- Health snapshots ------------------------------------------------------
 
 export interface HealthSnapshotVersion {
@@ -564,4 +529,29 @@ export interface UserPreferenceUpdateInput {
 export interface ChangePasswordInput {
   current_password: string;
   new_password: string;
+}
+
+// --- Journal -------------------------------------------------------------
+
+export interface JournalEntry {
+  id: string;
+  patient_id: string;
+  entry_date: string;
+  mood: number | null;
+  title: string | null;
+  body: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JournalEntryInput {
+  entry_date: string;
+  mood: number | null;
+  title: string | null;
+  body: string;
+}
+
+export interface JournalListResponse {
+  items: JournalEntry[];
+  total: number;
 }

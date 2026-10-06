@@ -19,7 +19,7 @@ import type { Medication } from "@/types/api";
 import { MedicationFormDialog } from "./medication-form-dialog";
 import { MedicationRemindersDialog } from "./medication-reminders-dialog";
 
-export function MedicationsView() {
+export function MedicationsView({ embedded = false }: { embedded?: boolean } = {}) {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"active" | "inactive">("active");
   const [search, setSearch] = useState("");
@@ -72,6 +72,7 @@ export function MedicationsView() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        compact={embedded}
         title="Medications"
         description="Medications you're taking or have taken, with optional reminders."
         action={

@@ -1,6 +1,6 @@
 # AI / OCR pipeline
 
-MedQueue AI is an **organizational and communication assistant**. It does
+CareQuill is an **organizational and communication assistant**. It does
 not diagnose conditions, prescribe treatment, or act as an autonomous
 medical decision-maker. Every AI/OCR result in this app is treated as a
 suggestion the patient must review — nothing is silently promoted to

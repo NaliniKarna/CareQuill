@@ -15,6 +15,7 @@ from app.models.document_extraction import DocumentExtraction  # noqa: E402,F401
 from app.models.email_log import EmailLog  # noqa: E402,F401
 from app.models.health_profile import HealthProfile  # noqa: E402,F401
 from app.models.health_snapshot import HealthSnapshot  # noqa: E402,F401
+from app.models.journal_entry import JournalEntry  # noqa: E402,F401
 from app.models.medical_condition import MedicalCondition  # noqa: E402,F401
 from app.models.medical_document import MedicalDocument  # noqa: E402,F401
 from app.models.medication import Medication  # noqa: E402,F401

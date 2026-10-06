@@ -22,7 +22,7 @@ const SEVERITY_VARIANT: Record<AllergySeverity, "warning" | "destructive" | "sec
   severe: "destructive",
 };
 
-export function AllergiesView() {
+export function AllergiesView({ embedded = false }: { embedded?: boolean } = {}) {
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Allergy | null>(null);
@@ -56,6 +56,7 @@ export function AllergiesView() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        compact={embedded}
         title="Allergies"
         description="Substances you're allergic to, so anyone treating you can plan around them."
         action={

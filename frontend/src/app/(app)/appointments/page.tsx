@@ -1,5 +1,11 @@
-import { AppointmentsView } from "@/features/appointments/appointments-view";
+import { Suspense } from "react";
+
+import { AppointmentsHub } from "@/features/appointments/appointments-hub";
 
 export default function AppointmentsPage() {
-  return <AppointmentsView />;
+  return (
+    <Suspense fallback={null}>
+      <AppointmentsHub />
+    </Suspense>
+  );
 }

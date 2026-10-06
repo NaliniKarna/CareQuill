@@ -15,7 +15,7 @@ const STATUS_VARIANT: Record<string, "success" | "destructive" | "secondary"> = 
   pending: "secondary",
 };
 
-export function EmailHistoryView() {
+export function EmailHistoryView({ doctorEmail }: { doctorEmail?: string | null } = {}) {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["email-logs"],
     queryFn: () => emailLogService.list(),
@@ -25,19 +25,28 @@ export function EmailHistoryView() {
   if (isError) {
     return <ErrorState description="Couldn't load your sharing history." onRetry={() => refetch()} />;
   }
-  if (!data || data.length === 0) {
+  // undefined = every log; null/empty = a doctor with no email, so nothing can match.
+  const logs =
+    doctorEmail === undefined
+      ? data
+      : data?.filter((l) => l.doctor_email.toLowerCase() === (doctorEmail ?? "").toLowerCase());
+  if (!logs || logs.length === 0) {
     return (
       <EmptyState
         icon={Mail}
         title="No reports shared yet"
-        description="Reports you share with a doctor will show up here."
+        description={
+          doctorEmail !== undefined
+            ? "Reports you share with this doctor will show up here."
+            : "Reports you share with a doctor will show up here."
+        }
       />
     );
   }
 
   return (
     <div className="flex flex-col gap-3">
-      {data.map((log: EmailLogListItem) => (
+      {logs.map((log: EmailLogListItem) => (
         <Card key={log.id}>
           <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex flex-col gap-1">

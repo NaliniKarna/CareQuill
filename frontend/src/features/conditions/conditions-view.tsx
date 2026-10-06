@@ -22,7 +22,7 @@ const STATUS_VARIANT: Record<ConditionStatus, "warning" | "secondary" | "success
   resolved: "success",
 };
 
-export function ConditionsView() {
+export function ConditionsView({ embedded = false }: { embedded?: boolean } = {}) {
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MedicalCondition | null>(null);
@@ -56,6 +56,7 @@ export function ConditionsView() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        compact={embedded}
         title="Medical conditions"
         description="Conditions you've been diagnosed with or are managing."
         action={

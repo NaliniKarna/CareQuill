@@ -40,9 +40,9 @@ const appointmentSchema = z.object({
 
 type AppointmentFormValues = z.infer<typeof appointmentSchema>;
 
-function toFormValues(appointment: Appointment | null): AppointmentFormValues {
+function toFormValues(appointment: Appointment | null, defaultDoctorId = ""): AppointmentFormValues {
   return {
-    doctor_contact_id: appointment?.doctor_contact_id ?? "",
+    doctor_contact_id: appointment?.doctor_contact_id ?? defaultDoctorId,
     appointment_date: appointment?.appointment_date ?? todayIso(),
     appointment_time: appointment?.appointment_time?.slice(0, 5) ?? "",
     reason: appointment?.reason ?? "",
@@ -54,10 +54,13 @@ export function AppointmentFormDialog({
   open,
   onOpenChange,
   appointment,
+  defaultDoctorId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   appointment: Appointment | null;
+  /** Pre-selects a doctor when booking from a doctor's profile. */
+  defaultDoctorId?: string;
 }) {
   const queryClient = useQueryClient();
   const isEditing = Boolean(appointment);
@@ -80,8 +83,8 @@ export function AppointmentFormDialog({
   });
 
   useEffect(() => {
-    if (open) reset(toFormValues(appointment));
-  }, [open, appointment, reset]);
+    if (open) reset(toFormValues(appointment, defaultDoctorId));
+  }, [open, appointment, defaultDoctorId, reset]);
 
   const mutation = useMutation({
     mutationFn: (values: AppointmentCreateInput | AppointmentUpdateInput) =>

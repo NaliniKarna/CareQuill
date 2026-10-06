@@ -54,7 +54,7 @@ export function ShareSummaryDialog({
         toast.error("The email could not be sent.");
       }
     },
-    onError: (error) => toast.error(getApiErrorMessage(error, "Unable to share this summary.")),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Unable to share this Record Summary.")),
   });
 
   const doctorsWithEmail = doctors?.filter((d) => d.email);
@@ -71,7 +71,7 @@ export function ShareSummaryDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Share health summary</DialogTitle>
+          <DialogTitle>Share Record Summary</DialogTitle>
           <DialogDescription>
             Send your confirmed health summary to a doctor by email.
           </DialogDescription>

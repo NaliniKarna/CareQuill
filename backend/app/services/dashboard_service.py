@@ -23,7 +23,7 @@ class DashboardService:
 
         notifications: list[str] = []
         if completion < 100:
-            notifications.append("Complete your health profile to get the most out of MedQueue AI.")
+            notifications.append("Complete your health profile to get the most out of CareQuill.")
         if not user.is_verified:
             notifications.append("Please verify your email address.")
 

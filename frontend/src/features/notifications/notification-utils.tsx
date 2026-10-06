@@ -22,7 +22,7 @@ export const NOTIFICATION_ICON: Record<NotificationType, LucideIcon> = {
 export const NOTIFICATION_LABEL: Record<NotificationType, string> = {
   appointment_approaching: "Appointment",
   medication_reminder: "Medication",
-  ai_summary_ready: "AI summary",
+  ai_summary_ready: "Record Summary",
   document_processed: "Document",
   report_shared: "Report shared",
   email_failure: "Email failed",

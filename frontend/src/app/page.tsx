@@ -17,6 +17,7 @@ import {
   Ban,
 } from "lucide-react";
 
+import { BrandLogo } from "@/components/shared/brand";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth-store";
 
@@ -29,7 +30,7 @@ const FEATURES = [
   },
   {
     icon: Sparkles,
-    title: "AI-assisted summaries",
+    title: "Record Summary",
     description:
       "Organize your health information into a clear summary you review and approve yourself.",
   },
@@ -93,7 +94,7 @@ const PRIVACY_POINTS = [
   {
     icon: Ban,
     title: "Your data is never sold",
-    description: "MedQueue AI does not sell or share your health information with third parties for advertising or any other purpose.",
+    description: "CareQuill does not sell or share your health information with third parties for advertising or any other purpose.",
   },
 ];
 
@@ -111,7 +112,7 @@ export default function HomePage() {
     <div className="flex flex-1 flex-col">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="text-lg font-semibold tracking-tight">MedQueue AI</span>
+          <BrandLogo markClassName="h-9" />
           <nav className="flex items-center gap-3">
             <Button asChild variant="ghost">
               <Link href="/login">Log in</Link>
@@ -134,7 +135,7 @@ export default function HomePage() {
             Your health history, intelligently organized for every consultation.
           </h1>
           <p className="max-w-xl text-lg text-muted-foreground">
-            MedQueue AI helps you keep your health profile, medications, documents, and
+            CareQuill helps you keep your health profile, medications, documents, and
             doctor contacts in one secure place, with AI assistance you always review
             before it&apos;s shared.
           </p>
@@ -212,7 +213,7 @@ export default function HomePage() {
           <div className="flex flex-col gap-2">
             <h2 className="text-xl font-semibold tracking-tight">AI that assists, never decides</h2>
             <p className="text-muted-foreground">
-              MedQueue AI uses AI to help organize and summarize the health information you
+              CareQuill uses AI to help organize and summarize the health information you
               provide -- turning your records into a clear summary and pulling details out of
               documents you upload. It never diagnoses conditions, prescribes treatment, or
               acts on your behalf. Every AI-generated summary and every OCR-extracted detail
@@ -245,7 +246,7 @@ export default function HomePage() {
         </section>
 
         <section className="rounded-xl border border-border bg-muted/40 p-6 text-sm text-muted-foreground">
-          MedQueue AI is an organizational and communication assistant. It does not
+          CareQuill is an organizational and communication assistant. It does not
           diagnose conditions, prescribe treatment, or replace professional medical
           advice. Always consult a qualified healthcare provider for medical decisions.
         </section>
@@ -270,7 +271,7 @@ export default function HomePage() {
       </main>
 
       <footer className="border-t border-border px-6 py-6 text-center text-sm text-muted-foreground">
-        &copy; {new Date().getFullYear()} MedQueue AI. All rights reserved.
+        &copy; {new Date().getFullYear()} CareQuill. All rights reserved.
       </footer>
     </div>
   );

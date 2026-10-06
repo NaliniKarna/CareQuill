@@ -26,7 +26,7 @@ def render_health_report_email(
     else:
         intro = f"The patient {patient_name} has shared their health summary with you."
 
-    attachments = ["MedQueue AI Health Summary", *document_titles]
+    attachments = ["CareQuill Health Summary", *document_titles]
     attachment_lines = "\n".join(f"- {title}" for title in attachments)
 
     text_body = (
@@ -38,7 +38,7 @@ def render_health_report_email(
         "Please note that the attached summary is AI-assisted and based on "
         "information provided by the patient.\n\n"
         "Regards,\n"
-        "MedQueue AI"
+        "CareQuill"
     )
 
     attachment_html = "".join(f"<li>{html.escape(title)}</li>" for title in attachments)
@@ -49,7 +49,7 @@ def render_health_report_email(
         f"<p>Attached:</p><ul>{attachment_html}</ul>"
         "<p>Please note that the attached summary is AI-assisted and based on "
         "information provided by the patient.</p>"
-        "<p>Regards,<br/>MedQueue AI</p>"
+        "<p>Regards,<br/>CareQuill</p>"
     )
 
     return html_body, text_body

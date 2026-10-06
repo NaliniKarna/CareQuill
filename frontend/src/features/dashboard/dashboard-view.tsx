@@ -1,59 +1,30 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import {
-  UserRound,
-  Pill,
-  FileStack,
-  CalendarClock,
-  Sparkles,
-  Share2,
-  AlertCircle,
-  ArrowRight,
-  AlarmClock,
-} from "lucide-react";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { AlertCircle, ArrowRight, CheckCircle2, UserRound } from "lucide-react";
+import { toast } from "sonner";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { appointmentService } from "@/services/appointment-service";
 import { dashboardService } from "@/services/dashboard-service";
+import { doctorService } from "@/services/doctor-service";
+import { medicationService } from "@/services/medication-service";
 
-const QUICK_ACTIONS = [
-  { label: "Complete your profile", href: "/profile", icon: UserRound, enabled: true },
-  { label: "Add medication", href: "/medications", icon: Pill, enabled: true },
-  { label: "Upload report", href: "/medical-records", icon: FileStack, enabled: true },
-  { label: "Book appointment", href: "/appointments", icon: CalendarClock, enabled: true },
-  { label: "Generate health summary", href: "/ai-summary", icon: Sparkles, enabled: true },
-  { label: "Share with doctor", href: "/ai-summary", icon: Share2, enabled: true },
-];
+import {
+  ActiveMedicationsPanel,
+  QuickActionsMenu,
+  UpcomingAppointmentsPanel,
+  UpcomingRemindersPanel,
+} from "./dashboard-widgets";
+import { buildUpcomingReminders } from "./upcoming-reminders";
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <CardContent className="flex items-center gap-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-          <Icon className="size-5" />
-        </div>
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-lg font-semibold">{value}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+// Reminders are stored per medication, so cap the fan-out on the dashboard.
+const MAX_MEDICATIONS_FOR_REMINDERS = 8;
 
 export function DashboardView() {
   const { data, isLoading, isError } = useQuery({
@@ -61,16 +32,73 @@ export function DashboardView() {
     queryFn: dashboardService.get,
   });
 
+  const medicationsQuery = useQuery({
+    queryKey: ["medications", "active-for-dashboard"],
+    queryFn: () => medicationService.list({ active: true }),
+  });
+  const medications = medicationsQuery.data;
+  const reminderMedications = useMemo(
+    () => (medications ?? []).slice(0, MAX_MEDICATIONS_FOR_REMINDERS),
+    [medications]
+  );
+
+  const reminderQueries = useQueries({
+    queries: reminderMedications.map((m) => ({
+      queryKey: ["medication-reminders", m.id],
+      queryFn: () => medicationService.listReminders(m.id),
+    })),
+  });
+  const remindersLoading =
+    medicationsQuery.isLoading || reminderQueries.some((q) => q.isLoading);
+
+  const now = new Date();
+  const upcomingReminders = buildUpcomingReminders(
+    reminderMedications,
+    reminderQueries.map((q) => q.data),
+    now
+  );
+
+  const appointmentsQuery = useQuery({
+    queryKey: ["appointments", "upcoming"],
+    queryFn: () => appointmentService.list("upcoming"),
+  });
+  const doctorsQuery = useQuery({
+    queryKey: ["doctors"],
+    queryFn: () => doctorService.list(),
+  });
+  const doctorNameById = useMemo(
+    () => Object.fromEntries((doctorsQuery.data ?? []).map((d) => [d.id, d.name])),
+    [doctorsQuery.data]
+  );
+
+  // The unverified-email reminder is a one-time pop-up per browser session
+  // instead of a permanent banner on the page.
+  const needsEmailVerification = Boolean(
+    data?.notifications.some((n) => n.toLowerCase().includes("verify your email"))
+  );
+  useEffect(() => {
+    if (!needsEmailVerification) return;
+    try {
+      if (window.sessionStorage.getItem("verify-email-toast") === "1") return;
+      window.sessionStorage.setItem("verify-email-toast", "1");
+    } catch {
+      // Storage unavailable: show the pop-up anyway.
+    }
+    toast.warning("Please verify your email address", {
+      description: "Open the verification link we sent to your inbox.",
+      duration: 10000,
+    });
+  }, [needsEmailVerification]);
+
   if (isLoading) {
     return (
       <div className="flex flex-col gap-6">
-        <Skeleton className="h-8 w-64" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24" />
+        <Skeleton className="h-36" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-56" />
           ))}
         </div>
-        <Skeleton className="h-40" />
       </div>
     );
   }
@@ -85,114 +113,73 @@ export function DashboardView() {
     );
   }
 
+  const percent = data.profile_completion_percent;
+  const complete = percent >= 100;
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{data.welcome_message}</h1>
-        <p className="text-muted-foreground">Here&apos;s an overview of your health record.</p>
-      </div>
-
-      {data.notifications.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {data.notifications.map((notification) => (
-            <Alert key={notification}>
-              <AlertCircle />
-              <AlertDescription>{notification}</AlertDescription>
-            </Alert>
-          ))}
-        </div>
-      )}
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <StatCard
-          icon={Pill}
-          label="Active medications"
-          value={data.active_medications_count}
-        />
-        <StatCard
-          icon={FileStack}
-          label="Medical documents"
-          value={data.recent_documents_count}
-        />
-        <StatCard
-          icon={CalendarClock}
-          label="Next appointment"
-          value={
-            data.next_appointment
-              ? `${data.next_appointment.appointment_date}${
-                  data.next_appointment.doctor_name ? ` · ${data.next_appointment.doctor_name}` : ""
-                }`
-              : "None scheduled"
-          }
-        />
-        <StatCard
-          icon={AlarmClock}
-          label="Reminders due today"
-          value={data.reminders_due_today_count}
-        />
-        <StatCard
-          icon={Sparkles}
-          label="AI summary"
-          value={
-            data.latest_ai_summary_status
-              ? data.latest_ai_summary_status.replace("_", " ")
-              : "Not generated"
-          }
-        />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile completion</CardTitle>
-          <CardDescription>
-            A complete profile helps generate more accurate AI summaries later.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex items-center justify-between text-sm">
-            <span>{data.profile_completion_percent}% complete</span>
-            {data.profile_completion_percent < 100 && (
-              <Link href="/profile" className="flex items-center gap-1 text-primary hover:underline">
-                Finish your profile <ArrowRight className="size-3.5" />
+      {/* Welcome + profile completion, in one calm banner */}
+      <section className="rounded-xl border border-border bg-gradient-to-br from-accent to-card p-5 shadow-sm sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">{data.welcome_message}</h1>
+            <p className="text-muted-foreground">Here&apos;s an overview of your health record.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button asChild variant="outline" size="sm" className="bg-card/80">
+              <Link href="/settings?tab=profile" aria-label="Health profile">
+                <UserRound />
+                <span className="hidden sm:inline">Health profile</span>
               </Link>
-            )}
+            </Button>
+            <QuickActionsMenu />
           </div>
-          <Progress value={data.profile_completion_percent} />
-        </CardContent>
-      </Card>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {QUICK_ACTIONS.map((action) =>
-              action.enabled ? (
-                <Button key={action.label} asChild variant="outline" className="justify-start">
-                  <Link href={action.href}>
-                    <action.icon />
-                    {action.label}
-                  </Link>
-                </Button>
-              ) : (
-                <Button
-                  key={action.label}
-                  variant="outline"
-                  className="justify-start"
-                  disabled
+        <div className="mt-5 rounded-lg border border-border/70 bg-card/80 p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+              {complete ? <CheckCircle2 className="size-5 text-success" /> : <UserRound className="size-5" />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+                <p className="text-sm font-semibold">Profile completion</p>
+                <p className="text-sm font-semibold text-primary">{percent}% complete</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                A complete profile helps make your Record Summary more accurate.
+              </p>
+              <Progress value={percent} className="mt-3" aria-label="Profile completion" />
+              {!complete && (
+                <Link
+                  href="/settings?tab=profile"
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
                 >
-                  <action.icon />
-                  {action.label}
-                  <Badge variant="secondary" className="ml-auto text-[10px]">
-                    Soon
-                  </Badge>
-                </Button>
-              )
-            )}
+                  Finish your profile <ArrowRight className="size-3.5" />
+                </Link>
+              )}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ActiveMedicationsPanel
+          medications={medications}
+          totalCount={data.active_medications_count}
+          isLoading={medicationsQuery.isLoading}
+        />
+        <UpcomingRemindersPanel
+          reminders={upcomingReminders}
+          isLoading={remindersLoading}
+          now={now}
+        />
+        <UpcomingAppointmentsPanel
+          appointments={appointmentsQuery.data}
+          doctorNameById={doctorNameById}
+          isLoading={appointmentsQuery.isLoading}
+        />
+      </div>
     </div>
   );
 }
