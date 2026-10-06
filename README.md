@@ -1,6 +1,6 @@
-# MedQueue AI
+# CareQuill
 
-MedQueue AI helps patients organize and communicate their health history
+ CareQuill helps patients organize and communicate their health history
 to doctors. Patients keep their health profile, allergies, conditions,
 medications, medical documents, doctor contacts, and appointments in one
 place they control, get AI-assisted help organizing and summarizing that
