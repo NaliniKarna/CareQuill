@@ -41,11 +41,18 @@ const medicationSchema = z
 
 type MedicationFormValues = z.infer<typeof medicationSchema>;
 
-function toFormValues(medication: Medication | null): MedicationFormValues {
+/** Values pre-filled from an AI/OCR suggestion. The patient still reviews and
+ * saves the form themselves -- nothing is created automatically. */
+export type MedicationPrefill = { name?: string; dosage?: string; frequency?: string };
+
+function toFormValues(
+  medication: Medication | null,
+  prefill?: MedicationPrefill
+): MedicationFormValues {
   return {
-    name: medication?.name ?? "",
-    dosage: medication?.dosage ?? "",
-    frequency: medication?.frequency ?? "",
+    name: medication?.name ?? prefill?.name ?? "",
+    dosage: medication?.dosage ?? prefill?.dosage ?? "",
+    frequency: medication?.frequency ?? prefill?.frequency ?? "",
     instructions: medication?.instructions ?? "",
     start_date: medication?.start_date ?? "",
     end_date: medication?.end_date ?? "",
@@ -57,10 +64,14 @@ export function MedicationFormDialog({
   open,
   onOpenChange,
   medication,
+  prefill,
+  sourceDocumentId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   medication: Medication | null;
+  prefill?: MedicationPrefill;
+  sourceDocumentId?: string;
 }) {
   const queryClient = useQueryClient();
   const isEditing = Boolean(medication);
@@ -76,14 +87,17 @@ export function MedicationFormDialog({
   });
 
   useEffect(() => {
-    if (open) reset(toFormValues(medication));
-  }, [open, medication, reset]);
+    if (open) reset(toFormValues(medication, prefill));
+  }, [open, medication, prefill, reset]);
 
   const mutation = useMutation({
     mutationFn: (values: MedicationInput) =>
       medication
         ? medicationService.update(medication.id, values)
-        : medicationService.create(values),
+        : medicationService.create({
+            ...values,
+            ...(sourceDocumentId ? { source_document_id: sourceDocumentId } : {}),
+          }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["medications"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });

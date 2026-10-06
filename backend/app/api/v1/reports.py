@@ -53,5 +53,7 @@ async def share_report(
     then logs the result. This endpoint IS the confirmation -- nothing is
     ever sent by /preview or /generate."""
     service = HealthReportService(session)
-    email_log = await service.share(patient_id=current_user.id, request=payload)
+    email_log = await service.share(
+        patient_id=current_user.id, request=payload, patient_email=current_user.email
+    )
     return EmailLogRead.model_validate(email_log)

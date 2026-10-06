@@ -47,7 +47,10 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiErrorBody>) => {
     const originalRequest = error.config as RetriableConfig | undefined;
-    const isAuthRoute = originalRequest?.url?.includes("/auth/");
+    // A 401 from these means "wrong password", not "expired token" -- do not
+    // try to refresh the session (or redirect) because of it.
+    const isAuthRoute =
+      originalRequest?.url?.includes("/auth/") || originalRequest?.url?.includes("/account/delete");
 
     if (
       error.response?.status === 401 &&

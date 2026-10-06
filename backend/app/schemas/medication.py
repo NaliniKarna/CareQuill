@@ -22,6 +22,9 @@ class MedicationBase(BaseModel):
 
 class MedicationCreate(MedicationBase):
     is_active: bool = True
+    # Set when the patient is adding this after reviewing an AI/OCR
+    # suggestion from one of their own documents (verified server-side).
+    source_document_id: uuid.UUID | None = None
 
 
 class MedicationUpdate(MedicationBase):
@@ -35,6 +38,8 @@ class MedicationRead(MedicationBase):
 
     id: uuid.UUID
     patient_id: uuid.UUID
+    source: str = "manual"
+    source_document_id: uuid.UUID | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime

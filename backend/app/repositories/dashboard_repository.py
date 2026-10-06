@@ -6,9 +6,10 @@ domain repositories for medications/appointments/documents/etc. will land
 with the checkpoints that add full CRUD for those features.
 """
 import uuid
+from dataclasses import dataclass
 from datetime import date
 
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ai_summary import AISummary
@@ -20,25 +21,52 @@ from app.models.medication import Medication
 from app.models.medication_reminder import MedicationReminder
 
 
+@dataclass
+class DashboardCounts:
+    active_medications: int
+    documents: int
+    has_snapshot: bool
+    latest_ai_summary_status: str | None
+
 class DashboardRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def count_active_medications(self, patient_id: uuid.UUID) -> int:
-        result = await self.session.execute(
+    async def get_counts(self, patient_id: uuid.UUID) -> DashboardCounts:
+        """Four dashboard figures in ONE round trip (scalar subqueries)
+        instead of four separate queries - every dashboard load used to pay
+        a database round trip per figure."""
+        active_meds = (
             select(func.count())
             .select_from(Medication)
             .where(Medication.patient_id == patient_id, Medication.is_active.is_(True))
+            .scalar_subquery()
         )
-        return result.scalar_one()
-
-    async def count_recent_documents(self, patient_id: uuid.UUID) -> int:
-        result = await self.session.execute(
+        documents = (
             select(func.count())
             .select_from(MedicalDocument)
             .where(MedicalDocument.patient_id == patient_id)
+            .scalar_subquery()
         )
-        return result.scalar_one()
+        has_snapshot = exists().where(HealthSnapshot.patient_id == patient_id)
+        latest_status = (
+            select(AISummary.status)
+            .where(AISummary.patient_id == patient_id)
+            .order_by(AISummary.created_at.desc())
+            .limit(1)
+            .scalar_subquery()
+        )
+        row = (
+            await self.session.execute(
+                select(active_meds, documents, has_snapshot, latest_status)
+            )
+        ).one()
+        return DashboardCounts(
+            active_medications=row[0] or 0,
+            documents=row[1] or 0,
+            has_snapshot=bool(row[2]),
+            latest_ai_summary_status=row[3],
+        )
 
     async def get_next_appointment(
         self, patient_id: uuid.UUID
@@ -85,20 +113,3 @@ class DashboardRepository:
             if days_of_week == "daily" or today_code in days_of_week.split(","):
                 count += 1
         return count
-
-    async def has_health_snapshot(self, patient_id: uuid.UUID) -> bool:
-        result = await self.session.execute(
-            select(func.count())
-            .select_from(HealthSnapshot)
-            .where(HealthSnapshot.patient_id == patient_id)
-        )
-        return result.scalar_one() > 0
-
-    async def get_latest_ai_summary(self, patient_id: uuid.UUID) -> AISummary | None:
-        result = await self.session.execute(
-            select(AISummary)
-            .where(AISummary.patient_id == patient_id)
-            .order_by(AISummary.created_at.desc())
-            .limit(1)
-        )
-        return result.scalar_one_or_none()

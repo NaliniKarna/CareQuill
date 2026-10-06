@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, time
 
-from sqlalchemy import Date, ForeignKey, String, Text, Time
+from sqlalchemy import Date, ForeignKey, Index, String, Text, Time
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -13,6 +13,7 @@ from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 class Appointment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "appointments"
+    __table_args__ = (Index("ix_appointments_patient_date", "patient_id", "appointment_date"),)
 
     patient_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True),

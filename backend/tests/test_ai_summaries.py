@@ -383,3 +383,35 @@ async def test_nonexistent_ai_summary_returns_404(client, unique_email):
     headers = _auth_headers(data["access_token"])
     resp = await client.get(f"/api/v1/ai-summaries/{uuid.uuid4()}", headers=headers)
     assert resp.status_code == 404
+
+
+async def test_share_sets_reply_to_and_names_the_patient(client, unique_email, monkeypatch):
+    _use_provider(monkeypatch, _StubAIProvider([_good_result()]))
+    email_sender = _CapturingEmailSender(succeed=True)
+    _use_email_sender(monkeypatch, email_sender)
+
+    data, headers = await _setup_patient_with_snapshot(client, unique_email)
+    await client.put(
+        "/api/v1/profile", headers=headers, json={"first_name": "Jane", "last_name": "Doe"}
+    )
+    await client.post("/api/v1/health-snapshots/generate", headers=headers)
+    summary_id = (
+        await client.post("/api/v1/ai-summaries/generate", headers=headers, json={})
+    ).json()["id"]
+    await client.post(f"/api/v1/ai-summaries/{summary_id}/confirm", headers=headers)
+    doctor_id = (
+        await client.post(
+            "/api/v1/doctors", headers=headers, json={"name": "Dr. S", "email": "s@example.com"}
+        )
+    ).json()["id"]
+
+    resp = await client.post(
+        f"/api/v1/ai-summaries/{summary_id}/share",
+        headers=headers,
+        json={"doctor_contact_id": doctor_id},
+    )
+    assert resp.status_code == 200, resp.text
+    message = email_sender.sent[0]
+    assert message.reply_to == unique_email.lower()
+    assert "Jane Doe" in message.html_body
+    assert unique_email.lower() in message.text_body

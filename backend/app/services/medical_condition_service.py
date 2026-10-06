@@ -7,6 +7,7 @@ from app.models.medical_condition import MedicalCondition
 from app.repositories.medical_condition_repository import MedicalConditionRepository
 from app.schemas.medical_condition import MedicalConditionCreate, MedicalConditionUpdate
 from app.services.health_snapshot_service import HealthSnapshotService
+from app.services.provenance import resolve_provenance
 
 
 class MedicalConditionService:
@@ -18,7 +19,13 @@ class MedicalConditionService:
     async def create(
         self, *, patient_id: uuid.UUID, data: MedicalConditionCreate
     ) -> MedicalCondition:
-        condition = await self.repo.create(patient_id=patient_id, **data.model_dump())
+        payload = data.model_dump(exclude={"source_document_id"})
+        payload.update(
+            await resolve_provenance(
+                self.session, patient_id=patient_id, source_document_id=data.source_document_id
+            )
+        )
+        condition = await self.repo.create(patient_id=patient_id, **payload)
         await self.snapshots.generate(patient_id=patient_id)
         return condition
 

@@ -41,10 +41,27 @@ _KNOWN_ALLERGIES = {
 
 _RECOMMENDATION_PREFIXES = ("recommend", "advised", "advice", "follow up", "f/u", "f u")
 
+# Words that look like a drug name followed by a number+unit but are lab
+# analytes / report vocabulary (e.g. "Hemoglobin 13.2 g", "Cholesterol 232
+# mg"). Without this, every lab-table row was suggested as a medication.
+_NON_MEDICATION_WORDS = frozenset(
+    {
+        "hemoglobin", "haemoglobin", "hematocrit", "glucose", "cholesterol", "triglycerides",
+        "triglyceride", "creatinine", "urea", "bilirubin", "albumin", "protein", "calcium",
+        "sodium", "potassium", "chloride", "magnesium", "phosphorus", "iron", "ferritin",
+        "hdl", "ldl", "vldl", "wbc", "rbc", "mcv", "mch", "mchc", "platelet", "platelets",
+        "ast", "alt", "alp", "ggt", "tsh", "hba1c", "total", "serum", "blood", "weight",
+        "height", "pressure", "pulse", "result", "results", "range", "normal", "test", "level",
+        "levels", "value", "uric", "acid", "sugar", "fasting", "random", "glycated",
+    }
+)
+
 # Metformin 500mg twice daily / Paracetamol 650 mg BID / Amoxicillin 250mg TID
+# The negative lookahead after the unit rejects concentration units such as
+# "mg/dL" or "g/L", which belong to lab values, not drug doses.
 _MEDICATION_RE = re.compile(
     r"\b(?P<name>[A-Z][a-zA-Z]{2,30})\s+"
-    r"(?P<dosage>\d+(?:\.\d+)?\s?(?:mg|mcg|g|ml|iu))"
+    r"(?P<dosage>\d+(?:\.\d+)?\s?(?:mg|mcg|g|ml|iu)(?![A-Za-z/]))"
     r"(?:\s+(?P<frequency>(?:once|twice|three times|four times)\s+(?:a\s+)?daily"
     r"|once daily|od|bid|tid|qid|q\.?d\.?|prn"
     r"|\d+\s*times?\s*(?:a|per)\s*day))?",
@@ -111,6 +128,26 @@ def clean_text(raw_text: str) -> str:
     return text.strip()
 
 
+def empty_entities() -> dict:
+    """The entity dict shape with nothing in it (used for images, OCR-less
+    uploads, and as the base the AI enrichment merges into)."""
+    return {
+        "medications": [],
+        "conditions": [],
+        "allergies": [],
+        "procedures": [],
+        "dates": [],
+        "lab_values": [],
+        "recommendations": [],
+    }
+
+
+def extract_dates(text: str) -> list[str]:
+    """Public wrapper for date-string detection (also used on X-ray
+    annotations)."""
+    return _extract_dates(text)
+
+
 def extract_entities(cleaned_text: str) -> dict:
     """Returns a dict matching exactly the shape documented in the task
     spec: medications, conditions, allergies, procedures, dates, lab_values,
@@ -141,6 +178,8 @@ def _extract_medications(text: str) -> list[dict]:
     seen: set[tuple[str, str]] = set()
     for match in _MEDICATION_RE.finditer(text):
         name = match.group("name").strip()
+        if name.lower() in _NON_MEDICATION_WORDS:
+            continue
         dosage = match.group("dosage").strip()
         # Normalize "500mg" -> "500 mg" for a consistent display value.
         dosage = re.sub(r"(\d)\s?([a-zA-Z]+)$", r"\1 \2", dosage)

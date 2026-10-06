@@ -123,7 +123,13 @@ class HealthReportService:
         return f"health-summary-{date.today().isoformat()}.pdf"
 
     # -- share ------------------------------------------------------------------
-    async def share(self, *, patient_id: uuid.UUID, request: HealthReportRequest) -> EmailLog:
+    async def share(
+        self,
+        *,
+        patient_id: uuid.UUID,
+        request: HealthReportRequest,
+        patient_email: str | None = None,
+    ) -> EmailLog:
         if request.doctor_contact_id is None:
             raise ValidationAppError("Select a doctor to share this report with.")
 
@@ -170,6 +176,7 @@ class HealthReportService:
             html_body=html_body,
             text_body=text_body,
             attachments=attachments,
+            reply_to=patient_email,
         )
 
         sender = get_email_sender()

@@ -41,10 +41,48 @@ class AISummaryResult:
     model_name: str
 
 
+@dataclass
+class AIStatus:
+    """Operator/patient-facing diagnostics: why AI features do or don't work.
+    `detail` is always safe to show in the UI (never a stack trace)."""
+
+    enabled: bool
+    provider: str
+    available: bool
+    model: str | None = None
+    model_ready: bool | None = None
+    detail: str | None = None
+
+
 class AIProvider(ABC):
     @abstractmethod
     async def generate_summary(self, request: AISummaryRequest) -> AISummaryResult:
         ...
+
+    async def generate_json(
+        self,
+        *,
+        prompt: str,
+        images: list[bytes] | None = None,
+        use_vision_model: bool = False,
+    ) -> str:
+        """Generic "prompt in, raw JSON text out" call used by the document
+        features (entity extraction, plain-language explanation, image
+        description). Callers are responsible for building a safe prompt
+        (see `app.ai.document_prompts`) and for validating the returned text
+        with a Pydantic schema -- exactly like the summary flow, nothing a
+        provider returns is trusted as-is.
+
+        Not abstract so existing providers/test doubles that only implement
+        summaries keep working; the default simply reports "unsupported"."""
+        raise NotImplementedError("This AI provider does not support generic JSON generation.")
+
+    async def status(self) -> AIStatus:
+        return AIStatus(
+            enabled=True,
+            provider=type(self).__name__,
+            available=await self.is_available(),
+        )
 
     @abstractmethod
     async def is_available(self) -> bool:

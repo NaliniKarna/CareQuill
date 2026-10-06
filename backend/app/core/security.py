@@ -6,6 +6,7 @@ default. Refresh tokens are stored server-side only as a hash (see
 `RefreshToken` model + `refresh_token_repository`), never in plaintext, so a
 leaked database dump does not hand out usable tokens.
 """
+import asyncio
 import hashlib
 import secrets
 import uuid
@@ -34,6 +35,29 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
         return _pwd_context.verify(plain_password, password_hash)
     except Exception:
         return False
+
+
+# Argon2 is deliberately CPU-expensive (tens to hundreds of milliseconds).
+# Calling it directly inside an `async def` blocks the whole event loop, so
+# EVERY other in-flight request stalls while one user logs in. The async
+# variants below run it in a worker thread; services must use these.
+async def hash_password_async(plain_password: str) -> str:
+    return await asyncio.to_thread(hash_password, plain_password)
+
+
+async def verify_password_async(plain_password: str, password_hash: str) -> bool:
+    return await asyncio.to_thread(verify_password, plain_password, password_hash)
+
+
+# A real Argon2 hash of a random value, computed once at import. Login
+# verifies against it when the email is unknown so "no such account" and
+# "wrong password" take the same time (prevents account enumeration by
+# response timing).
+_DUMMY_PASSWORD_HASH = hash_password(secrets.token_urlsafe(16))
+
+
+async def verify_dummy_password_async(plain_password: str) -> None:
+    await asyncio.to_thread(verify_password, plain_password, _DUMMY_PASSWORD_HASH)
 
 
 # --------------------------------------------------------------------------

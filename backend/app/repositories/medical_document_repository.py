@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -80,6 +81,23 @@ class MedicalDocumentRepository:
         timeline) -- never exposed directly over HTTP."""
         result = await self.session.execute(
             select(MedicalDocument).where(MedicalDocument.patient_id == patient_id)
+        )
+        return list(result.scalars().all())
+
+    async def list_stuck(
+        self, *, updated_before: datetime, limit: int = 50
+    ) -> list[MedicalDocument]:
+        """Documents left in `uploaded`/`processing` since before the cutoff -
+        i.e. the server restarted (or crashed) while their background
+        processing was running. Internal use only (startup recovery)."""
+        result = await self.session.execute(
+            select(MedicalDocument)
+            .where(
+                MedicalDocument.processing_status.in_(("uploaded", "processing")),
+                MedicalDocument.updated_at < updated_before,
+            )
+            .order_by(MedicalDocument.updated_at.asc())
+            .limit(limit)
         )
         return list(result.scalars().all())
 

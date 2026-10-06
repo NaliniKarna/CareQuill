@@ -16,6 +16,23 @@ GET  /api/v1/health          liveness -- always 200 if the process is up
 GET  /api/v1/health/ready    readiness -- checks the DB connection, 503 if not reachable
 ```
 
+## Account (patient data control)
+
+```
+GET  /api/v1/account/export    ZIP: data.json (all your records) + original documents
+POST /api/v1/account/delete    {"password": "...", "confirmation": "DELETE"} -> 204
+                               permanent; 401 on wrong password, nothing is deleted
+```
+
+## Documents (additions)
+
+```
+GET  /api/v1/documents/{id}/preview     inline original (viewer)
+POST /api/v1/documents/{id}/reprocess   re-run OCR/extraction (202)
+POST /api/v1/documents/{id}/explain     AI plain-language explanation
+GET  /api/v1/ai-summaries/status        is AI usable, and if not why
+```
+
 ## Authentication
 
 ```

@@ -44,7 +44,14 @@ const OCR_VARIANT: Record<string, BadgeVariant> = {
   completed: "success",
   failed: "destructive",
   skipped: "outline",
+  no_text: "outline",
   not_applicable: "outline",
+};
+
+const OCR_LABEL: Record<string, string> = {
+  skipped: "OCR: off",
+  no_text: "OCR: no text found",
+  not_applicable: "Image (not text)",
 };
 
 const PAGE_SIZE = 20;
@@ -79,6 +86,13 @@ export function MedicalRecordsView() {
         limit: PAGE_SIZE,
         offset,
       }),
+    // Uploads are read in the background; poll only while something is in flight.
+    refetchInterval: (query) =>
+      query.state.data?.items.some(
+        (d) => d.processing_status === "uploaded" || d.processing_status === "processing"
+      )
+        ? 3000
+        : false,
   });
 
   const deleteMutation = useMutation({
@@ -185,7 +199,7 @@ export function MedicalRecordsView() {
                           {doc.processing_status}
                         </Badge>
                         <Badge variant={OCR_VARIANT[doc.ocr_status] ?? "secondary"}>
-                          OCR: {doc.ocr_status}
+                          {OCR_LABEL[doc.ocr_status] ?? `OCR: ${doc.ocr_status}`}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">

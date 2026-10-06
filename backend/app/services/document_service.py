@@ -3,15 +3,18 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.factory import get_ai_provider
 from app.core.config import settings
-from app.core.exceptions import NotFoundError, ValidationAppError
+from app.core.exceptions import AIGenerationError, NotFoundError, ValidationAppError
 from app.models.document_extraction import DocumentExtraction
 from app.models.medical_document import MedicalDocument
 from app.repositories.document_extraction_repository import DocumentExtractionRepository
 from app.repositories.medical_document_repository import MedicalDocumentRepository
+from app.repositories.user_preference_repository import UserPreferenceRepository
 from app.schemas.document_extraction import DocumentExtractionStatusUpdate
 from app.schemas.medical_document import MedicalDocumentUploadForm
 from app.services.audit_service import AuditService
+from app.services.document_ai_service import explain_with_ai
 from app.storage.factory import get_storage_backend
 from app.utils.files import (
     bytes_match_claimed_extension,
@@ -147,6 +150,69 @@ class DocumentService:
                 "(it may still be processing, or processing may have been skipped)."
             )
         return extraction
+
+    async def reprocess(self, *, patient_id: uuid.UUID, document_id: uuid.UUID) -> MedicalDocument:
+        """Re-queues OCR/extraction for an existing upload (e.g. after the
+        server's OCR was switched on, or after a failure). The original file
+        is untouched; the previous extraction is replaced and returns to
+        "pending review"."""
+        document = await self.get(patient_id=patient_id, document_id=document_id)
+        if document.processing_status == "processing":
+            raise ValidationAppError("This document is already being processed.")
+        document = await self.repo.update_status(
+            document, ocr_status="pending", processing_status="uploaded"
+        )
+        await self.audit.record(
+            user_id=patient_id,
+            event_type="document_reprocess",
+            resource_type="medical_document",
+            resource_id=document_id,
+        )
+        return document
+
+    async def explain(self, *, patient_id: uuid.UUID, document_id: uuid.UUID) -> dict:
+        """Generates (and stores on the extraction) a plain-language
+        explanation of the document's text. Explicit patient action; never
+        run automatically."""
+        if not settings.ai_enabled or not settings.ai_document_explain_enabled:
+            raise ValidationAppError(
+                "AI explanations aren't enabled for this deployment."
+            )
+        preference = await UserPreferenceRepository(self.session).get_by_user_id(patient_id)
+        if preference is not None and not preference.data_sharing_consent:
+            raise ValidationAppError(
+                "AI processing of your documents is turned off in your privacy settings."
+            )
+
+        extraction = await self.get_extraction(patient_id=patient_id, document_id=document_id)
+        if (extraction.extracted_data or {}).get("document_kind") == "medical_image":
+            raise ValidationAppError(
+                "Medical images aren't interpreted. Upload the written report to get "
+                "an explanation of its wording."
+            )
+
+        provider = get_ai_provider()
+        if not await provider.is_available():
+            raise AIGenerationError(
+                "The AI service isn't available right now. Please try again later."
+            )
+
+        explanation = await explain_with_ai(
+            provider=provider,
+            document_text=extraction.raw_text or "",
+            model_name=getattr(provider, "model", "ai"),
+        )
+        await self.extraction_repo.update(
+            extraction,
+            extracted_data={**(extraction.extracted_data or {}), "explanation": explanation},
+        )
+        await self.audit.record(
+            user_id=patient_id,
+            event_type="document_explain",
+            resource_type="medical_document",
+            resource_id=document_id,
+        )
+        return explanation
 
     async def update_extraction_status(
         self,

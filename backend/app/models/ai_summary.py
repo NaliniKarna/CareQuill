@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -18,6 +18,7 @@ class AISummary(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     to be shared with a doctor."""
 
     __tablename__ = "ai_summaries"
+    __table_args__ = (Index("ix_ai_summaries_patient_created", "patient_id", "created_at"),)
 
     patient_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True),

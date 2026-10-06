@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import date
 
-from sqlalchemy import BigInteger, Date, ForeignKey, String
+from sqlalchemy import BigInteger, Date, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -18,6 +18,7 @@ class MedicalDocument(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     traversal and filename-based attacks."""
 
     __tablename__ = "medical_documents"
+    __table_args__ = (Index("ix_medical_documents_patient_created", "patient_id", "created_at"),)
 
     patient_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True),

@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import get_current_user
 from app.api.dependencies.db import get_db
+from app.core.rate_limit import auth_rate_limit
 from app.models.user import User
 from app.schemas.auth import (
     AuthResponse,
@@ -17,21 +18,33 @@ from app.schemas.auth import (
 )
 from app.schemas.common import MessageResponse
 from app.schemas.user import UserRead
-from app.services.auth_service import AuthService
+from app.services.auth_service import AuthService, deliver_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# Brute-force / abuse brake on the unauthenticated, expensive endpoints.
+_RATE_LIMITED = [Depends(auth_rate_limit)]
 
-@router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-async def register(payload: RegisterRequest, session: AsyncSession = Depends(get_db)):
+
+@router.post(
+    "/register",
+    response_model=AuthResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=_RATE_LIMITED,
+)
+async def register(
+    payload: RegisterRequest,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_db),
+):
     service = AuthService(session)
-    user = await service.register(email=payload.email, password=payload.password)
-    tokens = await service.login(email=payload.email, password=payload.password)
-    _, token_pair = tokens
+    user, token_pair = await service.register(email=payload.email, password=payload.password)
+    verification_email = await service.build_verification_email(user)
+    background_tasks.add_task(deliver_email, verification_email)
     return AuthResponse(user=UserRead.model_validate(user), **token_pair.model_dump())
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post("/login", response_model=AuthResponse, dependencies=_RATE_LIMITED)
 async def login(payload: LoginRequest, session: AsyncSession = Depends(get_db)):
     service = AuthService(session)
     user, token_pair = await service.login(email=payload.email, password=payload.password)
@@ -57,16 +70,26 @@ async def me(current_user: User = Depends(get_current_user)):
     return UserRead.model_validate(current_user)
 
 
-@router.post("/forgot-password", response_model=MessageResponse)
-async def forgot_password(payload: ForgotPasswordRequest, session: AsyncSession = Depends(get_db)):
+@router.post(
+    "/forgot-password", response_model=MessageResponse, dependencies=_RATE_LIMITED
+)
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_db),
+):
     service = AuthService(session)
-    await service.forgot_password(email=payload.email)
+    reset_email = await service.forgot_password(email=payload.email)
+    if reset_email is not None:
+        background_tasks.add_task(deliver_email, reset_email)
     return MessageResponse(
         message="If an account exists for this email, a password reset link has been sent."
     )
 
 
-@router.post("/reset-password", response_model=MessageResponse)
+@router.post(
+    "/reset-password", response_model=MessageResponse, dependencies=_RATE_LIMITED
+)
 async def reset_password(payload: ResetPasswordRequest, session: AsyncSession = Depends(get_db)):
     service = AuthService(session)
     await service.reset_password(raw_token=payload.token, new_password=payload.new_password)

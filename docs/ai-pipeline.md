@@ -7,6 +7,36 @@ suggestion the patient must review — nothing is silently promoted to
 "verified" data. This document explains how that's implemented, not just
 asserted.
 
+## 0. What changed in the document pipeline (v2)
+
+* **Two phases.** Phase 1 (quick, no AI): text layer / Tesseract OCR +
+  regex entities, stored immediately as `pending_review`. Phase 2 (optional
+  AI, background): an LLM reads the OCR text and returns structured entities
+  and a short plain-language summary. The UI polls while `ai_status` is
+  `pending`. If AI is off or fails, the phase-1 result stays - nothing is lost.
+* **Grounding filter.** Every AI-proposed item must literally appear in the
+  document text (normalised: case, spaces, "500 mg" == "500mg"); otherwise it
+  is dropped. Schemas have no diagnosis/finding fields; outputs are
+  validated by Pydantic and carry a mandatory disclaimer.
+* **X-rays / MRI / CT are not OCR material.** OCR reads printed text, not
+  anatomy. Those uploads (category `xray`, `mri`, `ct_scan`) are stored
+  untouched and shown in an in-app viewer (zoom, rotate, brightness,
+  contrast, invert). Only burned-in annotations (L/R, dates, labels) are
+  read, and an *optional* vision model (`AI_VISION_ENABLED`) may add purely
+  descriptive metadata (modality, body region, view, quality). The app never
+  interprets the image. The radiologist's *written report* is text and goes
+  through the normal pipeline.
+* **Honest statuses.** `ocr_status` is now `completed`, `no_text`,
+  `skipped` (OCR disabled), `not_applicable` (image) or `failed` - it no
+  longer says "completed" when nothing was read.
+* **Plain-language explanation.** `POST /documents/{id}/explain` (explicit
+  patient action) explains wording and suggests questions for the doctor.
+* **Review before it becomes record.** "Review & add" opens the normal
+  medication/allergy/condition form pre-filled; the patient saves it, and
+  `source=document_suggestion` + `source_document_id` record provenance.
+* **Recovery.** Documents stuck in `processing` after a crash are re-queued
+  at startup.
+
 ## 1. Document upload -> OCR -> entity extraction
 
 ```

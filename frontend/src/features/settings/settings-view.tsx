@@ -17,6 +17,7 @@ import { getApiErrorMessage } from "@/lib/api-client";
 import { ChangePasswordForm } from "./change-password-form";
 import { NotificationPreferencesForm } from "./notification-preferences-form";
 import { PrivacySettingsForm } from "./privacy-settings-form";
+import { YourDataCard } from "./your-data-card";
 
 export function SettingsView() {
   const { user, logout } = useAuth();
@@ -50,6 +51,7 @@ export function SettingsView() {
           <TabsTrigger value="password">Password</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="privacy">Privacy</TabsTrigger>
+          <TabsTrigger value="data">Your data</TabsTrigger>
           <TabsTrigger value="logout">Logout</TabsTrigger>
         </TabsList>
 
@@ -106,6 +108,10 @@ export function SettingsView() {
 
         <TabsContent value="privacy" className="pt-4">
           <PrivacySettingsForm />
+        </TabsContent>
+
+        <TabsContent value="data" className="pt-4">
+          <YourDataCard />
         </TabsContent>
 
         <TabsContent value="logout" className="pt-4">

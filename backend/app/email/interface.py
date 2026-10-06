@@ -15,6 +15,9 @@ class EmailMessage:
     text_body: str | None = None
     attachments: list[tuple[str, bytes, str]] | None = None
     # attachments: list of (filename, content, mime_type)
+    # Replies go here instead of the system sender (e.g. the patient who
+    # shared a report). The visible From stays the configured sender.
+    reply_to: str | None = None
 
 
 @dataclass

@@ -34,9 +34,11 @@ const allergySchema = z.object({
 
 type AllergyFormValues = z.infer<typeof allergySchema>;
 
-function toFormValues(allergy: Allergy | null): AllergyFormValues {
+export type AllergyPrefill = { name?: string };
+
+function toFormValues(allergy: Allergy | null, prefill?: AllergyPrefill): AllergyFormValues {
   return {
-    name: allergy?.name ?? "",
+    name: allergy?.name ?? prefill?.name ?? "",
     severity: allergy?.severity ?? "",
     reaction: allergy?.reaction ?? "",
     notes: allergy?.notes ?? "",
@@ -47,10 +49,14 @@ export function AllergyFormDialog({
   open,
   onOpenChange,
   allergy,
+  prefill,
+  sourceDocumentId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   allergy: Allergy | null;
+  prefill?: AllergyPrefill;
+  sourceDocumentId?: string;
 }) {
   const queryClient = useQueryClient();
   const isEditing = Boolean(allergy);
@@ -67,12 +73,17 @@ export function AllergyFormDialog({
   });
 
   useEffect(() => {
-    if (open) reset(toFormValues(allergy));
-  }, [open, allergy, reset]);
+    if (open) reset(toFormValues(allergy, prefill));
+  }, [open, allergy, prefill, reset]);
 
   const mutation = useMutation({
     mutationFn: (values: AllergyInput) =>
-      allergy ? allergyService.update(allergy.id, values) : allergyService.create(values),
+      allergy
+        ? allergyService.update(allergy.id, values)
+        : allergyService.create({
+            ...values,
+            ...(sourceDocumentId ? { source_document_id: sourceDocumentId } : {}),
+          }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allergies"] });
       queryClient.invalidateQueries({ queryKey: ["timeline"] });

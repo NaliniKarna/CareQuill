@@ -7,6 +7,7 @@ from app.models.allergy import Allergy
 from app.repositories.allergy_repository import AllergyRepository
 from app.schemas.allergy import AllergyCreate, AllergyUpdate
 from app.services.health_snapshot_service import HealthSnapshotService
+from app.services.provenance import resolve_provenance
 
 
 class AllergyService:
@@ -16,7 +17,13 @@ class AllergyService:
         self.snapshots = HealthSnapshotService(session)
 
     async def create(self, *, patient_id: uuid.UUID, data: AllergyCreate) -> Allergy:
-        allergy = await self.repo.create(patient_id=patient_id, **data.model_dump())
+        payload = data.model_dump(exclude={"source_document_id"})
+        payload.update(
+            await resolve_provenance(
+                self.session, patient_id=patient_id, source_document_id=data.source_document_id
+            )
+        )
+        allergy = await self.repo.create(patient_id=patient_id, **payload)
         await self.snapshots.generate(patient_id=patient_id)
         return allergy
 

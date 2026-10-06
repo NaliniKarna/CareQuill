@@ -8,8 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.auth import get_current_user
 from app.api.dependencies.db import get_db
 from app.core.exceptions import ValidationAppError
+from app.core.rate_limit import ai_rate_limit, upload_rate_limit
 from app.models.user import User
-from app.schemas.document_extraction import DocumentExtractionRead, DocumentExtractionStatusUpdate
+from app.schemas.document_extraction import (
+    DocumentExplanationRead,
+    DocumentExtractionRead,
+    DocumentExtractionStatusUpdate,
+)
 from app.schemas.medical_document import (
     MedicalDocumentListResponse,
     MedicalDocumentRead,
@@ -23,7 +28,12 @@ router = APIRouter(prefix="/documents", tags=["medical-documents"])
 _MAX_LIMIT = 100
 
 
-@router.post("", response_model=MedicalDocumentRead, status_code=201)
+@router.post(
+    "",
+    response_model=MedicalDocumentRead,
+    status_code=201,
+    dependencies=[Depends(upload_rate_limit)],
+)
 async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -117,6 +127,70 @@ async def download_document(
     return StreamingResponse(
         io.BytesIO(content), media_type=document.mime_type, headers=headers
     )
+
+
+@router.get("/{document_id}/preview")
+async def preview_document(
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    """Same authorized bytes as /download, but `inline` so the in-app viewer
+    can show an X-ray / scan / PDF. The frontend fetches it with the bearer
+    token and renders a blob URL (never a public storage URL). The strict
+    CSP + nosniff stop the browser executing anything embedded in a file."""
+    service = DocumentService(session)
+    document, content = await service.get_file_bytes(
+        patient_id=current_user.id, document_id=document_id
+    )
+    headers = {
+        "Content-Disposition": f'inline; filename="{document.original_filename}"',
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": (
+            "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox"
+        ),
+        "Cache-Control": "private, no-store",
+    }
+    return StreamingResponse(
+        io.BytesIO(content), media_type=document.mime_type, headers=headers
+    )
+
+
+@router.post(
+    "/{document_id}/reprocess",
+    response_model=MedicalDocumentRead,
+    status_code=202,
+    dependencies=[Depends(upload_rate_limit)],
+)
+async def reprocess_document(
+    document_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    """Run OCR/extraction again on an existing upload (does not touch the
+    stored original)."""
+    service = DocumentService(session)
+    document = await service.reprocess(patient_id=current_user.id, document_id=document_id)
+    background_tasks.add_task(process_document, document.id)
+    return MedicalDocumentRead.model_validate(document)
+
+
+@router.post(
+    "/{document_id}/explain",
+    response_model=DocumentExplanationRead,
+    dependencies=[Depends(ai_rate_limit)],
+)
+async def explain_document(
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    """AI plain-language explanation of the document's wording. Explicit
+    patient action; stored with the extraction. Never a diagnosis."""
+    service = DocumentService(session)
+    explanation = await service.explain(patient_id=current_user.id, document_id=document_id)
+    return DocumentExplanationRead.model_validate(explanation)
 
 
 @router.delete("/{document_id}", status_code=204)

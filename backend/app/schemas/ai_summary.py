@@ -53,3 +53,14 @@ class EmailLogRead(BaseModel):
     error_message: str | None
     sent_at: datetime | None
     created_at: datetime
+
+
+class AIStatusRead(BaseModel):
+    enabled: bool
+    provider: str
+    available: bool
+    model: str | None = None
+    model_ready: bool | None = None
+    detail: str | None = None
+    document_ai_enabled: bool = False
+    vision_enabled: bool = False

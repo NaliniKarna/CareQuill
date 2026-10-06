@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -22,6 +22,7 @@ class Notification(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     about the clock, not a one-time event. See that service's docstring."""
 
     __tablename__ = "notifications"
+    __table_args__ = (Index("ix_notifications_patient_read", "patient_id", "is_read"),)
 
     patient_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True),

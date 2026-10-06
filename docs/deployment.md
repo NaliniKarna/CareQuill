@@ -30,6 +30,23 @@ docker compose --profile ai up ollama
 > `docker compose up --build` smoke test on a machine with Docker before
 > considering container support fully verified.
 
+## Why the dev stack is slow on Windows (and the fast way to run it)
+
+`docker-compose.yml` bind-mounts `./backend` and `./frontend` into Linux
+containers and runs `next dev` + `uvicorn --reload`. On Windows/Docker
+Desktop every file read crosses the VM boundary, and `next dev` compiles each
+page on first visit, so first loads take many seconds. For demos or normal
+use run the production stack instead - it has no bind mounts and serves
+pre-built pages:
+
+```powershell
+copy .env.production.example .env.production   # fill in the secrets
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+```
+
+If you keep the dev stack, put the repo inside WSL2 (`\\wsl$\...`) instead of
+`C:\` / `D:\` for a large speed-up.
+
 ## Production
 
 A separate compose file avoids bind-mounting source and runs real
@@ -43,9 +60,14 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d --bui
 ```
 
 Differences from the dev compose file:
-- Backend: no `--reload`, still runs `alembic upgrade head` on boot.
+- Backend: multi-stage image, non-root user, gunicorn with uvicorn workers
+  (`WEB_CONCURRENCY`, default 2), healthcheck on `/api/v1/health`, runs
+  `alembic upgrade head` on boot. `ENVIRONMENT=production` makes the app
+  refuse to start with a weak JWT secret, the dev DB password, wildcard CORS
+  or `EMAIL_BACKEND=console`; API docs are switched off.
 - Frontend: `frontend/Dockerfile`'s multi-stage `production` target
-  (`npm run build` at image-build time, `npm run start` at runtime) —
+  (`next build` with `output: "standalone"`, runs `node server.js` as a
+  non-root user) —
   `NEXT_PUBLIC_API_BASE_URL` is a **build arg**, baked into the client
   bundle, so changing it requires a rebuild, not just an env var change at
   runtime.

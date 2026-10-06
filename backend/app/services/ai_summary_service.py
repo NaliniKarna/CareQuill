@@ -45,6 +45,7 @@ from app.repositories.ai_summary_repository import AISummaryRepository
 from app.repositories.doctor_contact_repository import DoctorContactRepository
 from app.repositories.document_extraction_repository import DocumentExtractionRepository
 from app.repositories.email_log_repository import EmailLogRepository
+from app.repositories.health_profile_repository import HealthProfileRepository
 from app.repositories.medical_document_repository import MedicalDocumentRepository
 from app.schemas.ai_summary import AISummaryGenerateRequest
 from app.services.audit_service import AuditService
@@ -83,9 +84,10 @@ class AISummaryService:
     ) -> AISummary:
         provider = get_ai_provider()
         if not await provider.is_available():
+            status = await provider.status()
             raise ValidationAppError(
                 "AI summary generation isn't enabled for this deployment. "
-                "Ask an administrator to enable and configure an AI provider."
+                + (status.detail or "Ask an administrator to enable and configure an AI provider.")
             )
 
         snapshot = await self.snapshots.get_latest(patient_id=patient_id)
@@ -256,7 +258,12 @@ class AISummaryService:
     # -- sharing ----------------------------------------------------------
 
     async def share(
-        self, *, patient_id: uuid.UUID, summary_id: uuid.UUID, doctor_contact_id: uuid.UUID
+        self,
+        *,
+        patient_id: uuid.UUID,
+        summary_id: uuid.UUID,
+        doctor_contact_id: uuid.UUID,
+        patient_email: str | None = None,
     ) -> EmailLog:
         summary = await self.get(patient_id=patient_id, summary_id=summary_id)
         if summary.status not in _SHAREABLE_STATUSES:
@@ -275,11 +282,19 @@ class AISummaryService:
         # it -- the edited version is what the patient actually approved.
         final_text = summary.edited_summary_text or summary.summary_text
         subject = "Patient health summary"
+        profile = await HealthProfileRepository(self.session).get_by_user_id(patient_id)
+        patient_name = (
+            f"{profile.first_name} {profile.last_name}".strip() if profile else ""
+        ) or "a patient"
+        sender_line = f"Shared by {patient_name}" + (
+            f" ({patient_email}) - reply to this email to reach them." if patient_email else "."
+        )
         message = EmailMessage(
             to=doctor.email,
             subject=subject,
-            html_body=_render_html_body(final_text),
-            text_body=final_text,
+            html_body=f"<p><em>{html.escape(sender_line)}</em></p>" + _render_html_body(final_text),
+            text_body=f"{sender_line}\n\n{final_text}",
+            reply_to=patient_email,
         )
 
         sender = get_email_sender()

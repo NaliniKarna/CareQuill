@@ -1,12 +1,16 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PageHeader } from "@/components/shared/page-states";
+import { ListSkeleton, PageHeader } from "@/components/shared/page-states";
 
 import { EmailHistoryView } from "./email-history-view";
-import { ReportBuilderView } from "./report-builder-view";
+const ReportBuilderView = dynamic(
+  () => import("./report-builder-view").then((m) => m.ReportBuilderView),
+  { loading: () => <ListSkeleton /> }
+);
 
 export function ReportsView() {
   const searchParams = useSearchParams();

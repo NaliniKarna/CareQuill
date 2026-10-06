@@ -15,6 +15,7 @@ os.environ["JWT_SECRET_KEY"] = "test-secret-key-not-for-production-use"
 os.environ["EMAIL_BACKEND"] = "console"
 os.environ["AI_ENABLED"] = "false"
 os.environ["OCR_ENABLED"] = "false"
+os.environ["RATE_LIMIT_ENABLED"] = "false"
 
 import pytest
 import pytest_asyncio

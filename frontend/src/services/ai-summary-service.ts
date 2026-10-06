@@ -1,7 +1,11 @@
 import { apiClient } from "@/lib/api-client";
-import type { AISummary, AISummaryGenerateInput, EmailLog } from "@/types/api";
+import type { AIStatus, AISummary, AISummaryGenerateInput, EmailLog } from "@/types/api";
 
 export const aiSummaryService = {
+  async status(): Promise<AIStatus> {
+    const { data } = await apiClient.get<AIStatus>("/ai-summaries/status");
+    return data;
+  },
   async generate(payload: AISummaryGenerateInput): Promise<AISummary> {
     const { data } = await apiClient.post<AISummary>("/ai-summaries/generate", payload);
     return data;

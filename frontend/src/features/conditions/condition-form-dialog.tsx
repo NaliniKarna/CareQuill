@@ -34,9 +34,14 @@ const conditionSchema = z.object({
 
 type ConditionFormValues = z.infer<typeof conditionSchema>;
 
-function toFormValues(condition: MedicalCondition | null): ConditionFormValues {
+export type ConditionPrefill = { name?: string };
+
+function toFormValues(
+  condition: MedicalCondition | null,
+  prefill?: ConditionPrefill
+): ConditionFormValues {
   return {
-    name: condition?.name ?? "",
+    name: condition?.name ?? prefill?.name ?? "",
     diagnosed_date: condition?.diagnosed_date ?? "",
     status: condition?.status ?? "",
     notes: condition?.notes ?? "",
@@ -47,10 +52,14 @@ export function ConditionFormDialog({
   open,
   onOpenChange,
   condition,
+  prefill,
+  sourceDocumentId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   condition: MedicalCondition | null;
+  prefill?: ConditionPrefill;
+  sourceDocumentId?: string;
 }) {
   const queryClient = useQueryClient();
   const isEditing = Boolean(condition);
@@ -67,14 +76,17 @@ export function ConditionFormDialog({
   });
 
   useEffect(() => {
-    if (open) reset(toFormValues(condition));
-  }, [open, condition, reset]);
+    if (open) reset(toFormValues(condition, prefill));
+  }, [open, condition, prefill, reset]);
 
   const mutation = useMutation({
     mutationFn: (values: MedicalConditionInput) =>
       condition
         ? conditionService.update(condition.id, values)
-        : conditionService.create(values),
+        : conditionService.create({
+            ...values,
+            ...(sourceDocumentId ? { source_document_id: sourceDocumentId } : {}),
+          }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["conditions"] });
       queryClient.invalidateQueries({ queryKey: ["timeline"] });

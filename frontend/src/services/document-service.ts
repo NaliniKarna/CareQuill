@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api-client";
 import type {
+  DocumentExplanation,
   DocumentExtraction,
   MedicalDocument,
   MedicalDocumentListResponse,
@@ -58,6 +59,25 @@ export const documentService = {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+  },
+
+  /** Fetches the original through the authorized API as a blob so the in-app
+   * viewer can show it. The caller owns the returned object URL and must
+   * revoke it. */
+  async preview(id: string): Promise<{ url: string; mimeType: string }> {
+    const response = await apiClient.get(`/documents/${id}/preview`, { responseType: "blob" });
+    const blob = response.data as Blob;
+    return { url: window.URL.createObjectURL(blob), mimeType: blob.type };
+  },
+
+  async reprocess(id: string): Promise<MedicalDocument> {
+    const { data } = await apiClient.post<MedicalDocument>(`/documents/${id}/reprocess`);
+    return data;
+  },
+
+  async explain(id: string): Promise<DocumentExplanation> {
+    const { data } = await apiClient.post<DocumentExplanation>(`/documents/${id}/explain`);
+    return data;
   },
 
   async getExtraction(documentId: string): Promise<DocumentExtraction> {

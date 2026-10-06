@@ -15,7 +15,9 @@ class AllergyBase(BaseModel):
 
 
 class AllergyCreate(AllergyBase):
-    pass
+    # Set when the patient is adding this after reviewing an AI/OCR
+    # suggestion from one of their own documents (verified server-side).
+    source_document_id: uuid.UUID | None = None
 
 
 class AllergyUpdate(AllergyBase):
@@ -27,5 +29,7 @@ class AllergyRead(AllergyBase):
 
     id: uuid.UUID
     patient_id: uuid.UUID
+    source: str = "manual"
+    source_document_id: uuid.UUID | None = None
     created_at: datetime
     updated_at: datetime

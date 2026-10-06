@@ -8,6 +8,7 @@ from app.repositories.medication_repository import MedicationRepository
 from app.schemas.medication import MedicationCreate, MedicationUpdate
 from app.services.audit_service import AuditService
 from app.services.health_snapshot_service import HealthSnapshotService
+from app.services.provenance import resolve_provenance
 
 
 class MedicationService:
@@ -18,7 +19,13 @@ class MedicationService:
         self.audit = AuditService(session)
 
     async def create(self, *, patient_id: uuid.UUID, data: MedicationCreate) -> Medication:
-        medication = await self.repo.create(patient_id=patient_id, **data.model_dump())
+        payload = data.model_dump(exclude={"source_document_id"})
+        payload.update(
+            await resolve_provenance(
+                self.session, patient_id=patient_id, source_document_id=data.source_document_id
+            )
+        )
+        medication = await self.repo.create(patient_id=patient_id, **payload)
         await self.snapshots.generate(patient_id=patient_id)
         await self.audit.record(
             user_id=patient_id,

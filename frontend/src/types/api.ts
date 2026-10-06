@@ -78,6 +78,10 @@ export interface DashboardResponse {
 
 // --- Medications -----------------------------------------------------------
 
+/** Where a record came from: typed by the patient, or added by the patient
+ * after reviewing an AI/OCR suggestion from one of their documents. */
+export type RecordSource = "manual" | "document_suggestion";
+
 export interface Medication {
   id: string;
   patient_id: string;
@@ -89,6 +93,8 @@ export interface Medication {
   end_date: string | null;
   notes: string | null;
   is_active: boolean;
+  source?: RecordSource;
+  source_document_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -102,6 +108,8 @@ export type MedicationInput = {
   end_date: string | null;
   notes: string | null;
   is_active?: boolean;
+  /** Set only when the patient adds a record after reviewing an AI/OCR suggestion. */
+  source_document_id?: string;
 };
 
 export interface MedicationReminder {
@@ -136,6 +144,8 @@ export interface Allergy {
   severity: AllergySeverity | null;
   reaction: string | null;
   notes: string | null;
+  source?: RecordSource;
+  source_document_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -145,6 +155,7 @@ export type AllergyInput = {
   severity: AllergySeverity | null;
   reaction: string | null;
   notes: string | null;
+  source_document_id?: string;
 };
 
 // --- Conditions ----------------------------------------------------------
@@ -158,6 +169,8 @@ export interface MedicalCondition {
   diagnosed_date: string | null;
   status: ConditionStatus | null;
   notes: string | null;
+  source?: RecordSource;
+  source_document_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -167,6 +180,7 @@ export type MedicalConditionInput = {
   diagnosed_date: string | null;
   status: ConditionStatus | null;
   notes: string | null;
+  source_document_id?: string;
 };
 
 // --- Doctor contacts -------------------------------------------------------
@@ -233,7 +247,14 @@ export type DocumentCategory =
   | "other";
 
 export type DocumentProcessingStatus = "uploaded" | "processing" | "processed" | "failed";
-export type DocumentOcrStatus = "pending" | "processing" | "completed" | "failed" | "not_applicable";
+export type DocumentOcrStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "not_applicable"
+  | "skipped"
+  | "no_text";
 
 export interface MedicalDocument {
   id: string;
@@ -290,6 +311,47 @@ export interface ExtractedData {
     [key: string]: unknown;
   }>;
   recommendations?: string[];
+  /** "medical_image" for X-ray / MRI / CT uploads. */
+  document_kind?: string;
+  /** Present when OCR could not run or found nothing; shown to the patient. */
+  notice?: string;
+  /** Background AI step: pending -> done | failed | unavailable | disabled. */
+  ai_status?: "pending" | "done" | "failed" | "unavailable" | "disabled";
+  extraction_method?: string;
+  ai_summary?: string | null;
+  imaging?: ImagingInfo;
+}
+
+export interface ImagingInfo {
+  interpretation: "not_performed";
+  notice: string;
+  image_info?: { width: number; height: number; mode: string } | null;
+  annotations?: { text_lines?: string[]; side_markers_seen?: string[] };
+  ai_description?: {
+    modality?: string | null;
+    body_region?: string | null;
+    view?: string | null;
+    quality_notes?: string | null;
+    [key: string]: unknown;
+  } | null;
+}
+
+export interface DocumentExplanation {
+  explanation: string;
+  terms: Array<{ term: string; meaning: string }>;
+  questions_for_doctor: string[];
+  model: string;
+}
+
+export interface AIStatus {
+  enabled: boolean;
+  provider: string;
+  available: boolean;
+  model: string | null;
+  model_ready: boolean | null;
+  detail: string | null;
+  document_ai_enabled: boolean;
+  vision_enabled: boolean;
 }
 
 export type ExtractionStatus = "pending_review" | "processing" | "reviewed" | "dismissed" | "failed";

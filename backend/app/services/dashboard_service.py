@@ -18,11 +18,8 @@ class DashboardService:
         completion = HealthProfileService.completion_percent(profile)
 
         next_appointment_row = await self.repo.get_next_appointment(user.id)
-        active_medications = await self.repo.count_active_medications(user.id)
-        recent_documents = await self.repo.count_recent_documents(user.id)
+        counts = await self.repo.get_counts(user.id)
         reminders_due_today = await self.repo.count_reminders_due_today(user.id)
-        has_snapshot = await self.repo.has_health_snapshot(user.id)
-        latest_summary = await self.repo.get_latest_ai_summary(user.id)
 
         notifications: list[str] = []
         if completion < 100:
@@ -46,10 +43,10 @@ class DashboardService:
                 if next_appointment_row
                 else None
             ),
-            active_medications_count=active_medications,
-            recent_documents_count=recent_documents,
+            active_medications_count=counts.active_medications,
+            recent_documents_count=counts.documents,
             reminders_due_today_count=reminders_due_today,
-            health_snapshot_status="up_to_date" if has_snapshot else "not_generated",
-            latest_ai_summary_status=latest_summary.status if latest_summary else None,
+            health_snapshot_status="up_to_date" if counts.has_snapshot else "not_generated",
+            latest_ai_summary_status=counts.latest_ai_summary_status,
             notifications=notifications,
         )

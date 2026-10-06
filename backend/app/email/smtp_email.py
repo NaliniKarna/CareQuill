@@ -17,6 +17,8 @@ class SMTPEmailSender(EmailSender):
         msg["Subject"] = message.subject
         msg["From"] = f"{settings.email_from_name} <{settings.email_from_address}>"
         msg["To"] = message.to
+        if message.reply_to:
+            msg["Reply-To"] = message.reply_to
         msg.set_content(message.text_body or "This email requires an HTML-capable client.")
         msg.add_alternative(message.html_body, subtype="html")
 

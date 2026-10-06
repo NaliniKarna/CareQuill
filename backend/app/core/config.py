@@ -9,7 +9,7 @@ that behaviour can change per-deployment without code changes.
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     )
     test_database_url: str | None = None
     db_echo: bool = False
+    # Connection pool. SQLAlchemy's defaults (5 + 10 overflow) are fine for
+    # one worker; with several gunicorn workers each gets its own pool, so
+    # keep (pool_size + max_overflow) * workers below Postgres' max_connections.
+    db_pool_size: int = 10
+    db_max_overflow: int = 10
+    db_pool_recycle_seconds: int = 1800
 
     # --- Auth / JWT ---
     jwt_secret_key: str = "change-this-to-a-random-64-char-hex-secret-before-deploying"
@@ -79,10 +85,56 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = Field(default="llama3.2")
     ai_prompt_version: str = "v1"
+    # A summary prompt (verified snapshot + timeline + extractions) is far
+    # larger than Ollama's default 2048-token context; when the context is
+    # too small Ollama SILENTLY truncates the start of the prompt (the
+    # safety rules!) and the model answers with invalid JSON. 8192 keeps the
+    # whole prompt intact for llama3.2-class models.
+    ollama_num_ctx: int = 8192
+    ollama_temperature: float = 0.1
+    # Generation on a CPU-only machine (a typical student laptop) can take
+    # minutes for the first call while the model loads into memory.
+    ollama_timeout_seconds: float = 300.0
+    # Keep the model resident between calls so only the first request pays
+    # the load cost.
+    ollama_keep_alive: str = "30m"
+    # Document intelligence (all optional; the regex extractor always runs
+    # and is the fallback whenever AI is off or fails):
+    ai_document_extraction_enabled: bool = True
+    ai_document_explain_enabled: bool = True
+    # Vision model used ONLY to describe what kind of image an upload is
+    # (modality, body region, quality, visible text). It never reports
+    # findings. Needs a multimodal model pulled in Ollama, e.g.
+    # `ollama pull llama3.2-vision` or `ollama pull llava`.
+    ai_vision_enabled: bool = False
+    ollama_vision_model: str = "llama3.2-vision"
 
     # --- OCR ---
     ocr_enabled: bool = False
     ocr_engine: Literal["easyocr", "paddleocr", "tesseract", "none"] = "tesseract"
+    # Tesseract language pack(s), "+"-joined (e.g. "eng+nep"). Packs must be
+    # installed in the image (see backend/Dockerfile).
+    ocr_languages: str = "eng"
+    # Uploads whose OCR yields fewer words than this are reported as "no
+    # readable text" instead of "completed" with an empty extraction.
+    ocr_min_words: int = 5
+    # Hard cap per OCR call so one pathological scan can't hold a worker.
+    ocr_timeout_seconds: int = 60
+    # Max PDF pages OCR'd (scanned PDFs only) -- bounds worst-case CPU.
+    ocr_max_pdf_pages: int = 20
+
+    # --- Abuse protection ---
+    rate_limit_enabled: bool = True
+    # Per client IP, per route group, sliding window.
+    auth_rate_limit_attempts: int = 10
+    auth_rate_limit_window_seconds: int = 60
+    ai_rate_limit_attempts: int = 10
+    ai_rate_limit_window_seconds: int = 60
+    upload_rate_limit_attempts: int = 30
+    upload_rate_limit_window_seconds: int = 60
+
+    # --- Observability ---
+    slow_request_threshold_ms: int = 1000
 
     # --- Frontend origin used by generated links (password reset, etc.) ---
     frontend_base_url: str = "http://localhost:3000"
@@ -91,6 +143,36 @@ class Settings(BaseSettings):
     @classmethod
     def _validate_cors(cls, v: str) -> str:
         return v
+
+    @model_validator(mode="after")
+    def _refuse_insecure_production_config(self) -> "Settings":
+        """Fail fast at boot instead of silently running a production
+        deployment with development defaults (a well-known default JWT
+        secret would let anyone forge tokens for any patient)."""
+        if self.environment != "production":
+            return self
+
+        problems: list[str] = []
+        if (
+            self.jwt_secret_key.startswith("change-this")
+            or len(self.jwt_secret_key) < 32
+        ):
+            problems.append("JWT_SECRET_KEY must be a random value of at least 32 characters")
+        if "medqueue_dev_pw" in self.database_url:
+            problems.append("DATABASE_URL still uses the development database password")
+        if any(o.strip() in ("*", "") for o in self.cors_origins.split(",")):
+            problems.append("CORS_ORIGINS must list explicit origins (no '*')")
+        if self.email_backend == "console":
+            problems.append(
+                "EMAIL_BACKEND=console only prints emails to the log; "
+                "configure smtp, sendgrid or mailgun so verification, "
+                "password-reset and share-with-doctor emails are really sent"
+            )
+        if problems:
+            raise ValueError(
+                "Refusing to start with ENVIRONMENT=production: " + "; ".join(problems) + "."
+            )
+        return self
 
     @property
     def cors_origins_list(self) -> list[str]:

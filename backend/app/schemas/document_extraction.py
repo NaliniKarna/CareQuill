@@ -29,3 +29,15 @@ class DocumentExtractionStatusUpdate(BaseModel):
     AI-suggestions-require-explicit-review rule."""
 
     status: Literal["reviewed", "dismissed"]
+
+
+class ExplainedTerm(BaseModel):
+    term: str
+    meaning: str
+
+
+class DocumentExplanationRead(BaseModel):
+    explanation: str
+    terms: list[ExplainedTerm]
+    questions_for_doctor: list[str]
+    model: str

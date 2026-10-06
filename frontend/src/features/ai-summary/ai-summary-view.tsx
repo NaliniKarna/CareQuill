@@ -4,9 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, FileText, Loader2, Sparkles } from "lucide-react";
+import { AlertTriangle, Camera, FileText, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -160,6 +161,28 @@ function GenerateSummaryCard({ onGenerated }: { onGenerated: (summary: AISummary
   );
 }
 
+/** Tells the patient up front whether AI is actually usable, instead of
+ * letting them click Generate and hit an opaque server error. */
+function AIStatusBanner() {
+  const { data } = useQuery({
+    queryKey: ["ai-status"],
+    queryFn: () => aiSummaryService.status(),
+    staleTime: 60_000,
+    retry: false,
+  });
+  if (!data || (data.enabled && data.available && data.model_ready !== false)) return null;
+  return (
+    <Alert variant="warning">
+      <AlertTriangle />
+      <AlertTitle>AI summaries are not available right now</AlertTitle>
+      <AlertDescription>
+        {data.detail ??
+          "The AI service is not configured. Your records, documents and reports still work normally."}
+      </AlertDescription>
+    </Alert>
+  );
+}
+
 export function AISummaryView() {
   const searchParams = useSearchParams();
   const preselectedId = searchParams.get("id");
@@ -190,6 +213,8 @@ export function AISummaryView() {
           </Button>
         }
       />
+
+      <AIStatusBanner />
 
       <SnapshotSection />
 
