@@ -10,7 +10,7 @@ with a doctor by email — always after reviewing and approving what's sent.
 **Positioning:** *Your health history, intelligently organized for every
 consultation.*
 
-> MedQueue AI is an organizational and communication assistant. It does
+> CareQuill is an organizational and communication assistant. It does
 > not diagnose conditions, prescribe treatment, or act as an autonomous
 > medical decision-maker. It is designed with privacy and security
 > principles appropriate for handling sensitive health information, but it
@@ -29,14 +29,14 @@ still to be added.
 Three checkpoints, all implemented and verified against a real Postgres
 database (not mocks):
 
-1. **Foundation** — auth (register/login/refresh/logout/forgot-reset/
+1. **Foundation** - auth (register/login/refresh/logout/forgot-reset/
    verify), health profile, a basic dashboard.
-2. **Core functionality** — medical records + OCR + heuristic entity
+2. **Core functionality** - medical records + OCR + heuristic entity
    extraction, medications + reminders, allergies, conditions, doctor
    contacts, appointments, a tagged health timeline, versioned health
    snapshots, and AI-assisted summaries with a full
    Generate → Review → Edit → Confirm → Share workflow.
-3. **Reports, security, and polish** — PDF health report generation with
+3. **Reports, security, and polish** - PDF health report generation with
    patient-controlled section selection, a Share-With-Doctor flow that
    emails the PDF plus explicitly-selected documents, email history,
    in-app notifications, an audit log, account settings (change password,
@@ -44,9 +44,7 @@ database (not mocks):
    readiness endpoint, a public landing page, mobile navigation, and a
    dedicated security audit pass.
 
-See `claude/checkpoint-*-status.md` in this project's knowledge base (or
-just read the code — it's the same story) for the detailed history of what
-each checkpoint added.
+
 
 ## Features
 
