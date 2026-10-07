@@ -112,7 +112,7 @@ configuration alone. The app runs fully without AI or OCR configured
 ## Repository structure
 
 ```
-medqueue-ai/
+CareQuill/
 ├── backend/                 FastAPI app (see backend/README for its own layout)
 ├── frontend/                Next.js app (feature-based structure under src/)
 ├── docs/
