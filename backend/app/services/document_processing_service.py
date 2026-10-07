@@ -60,6 +60,9 @@ from app.storage.factory import get_storage_backend
 _MIN_TEXT_LAYER_LENGTH = 20  # below this, treat a PDF as having no usable text layer
 _PDF_RENDER_DPI = 200
 _STUCK_AFTER = timedelta(minutes=10)
+# Startup recovery retries a document at most this many times; after that
+# it is marked failed and the patient can choose "Reprocess" themselves.
+_MAX_RECOVERY_ATTEMPTS = 2
 
 _SUPPORTED_IMAGE_MIME_TYPES = {"image/png", "image/jpeg", "image/jpg"}
 
@@ -334,23 +337,37 @@ async def _mark_failed(document_id: uuid.UUID) -> None:
 
 
 async def recover_stuck_documents() -> int:
-    """Called once at startup. Background tasks live in the server process,
-    so a restart/crash mid-processing leaves documents stuck on
-    "processing" forever. Re-queue them (bounded)."""
+    """Called once at startup by every worker. Background tasks live in the
+    server process, so a restart/crash mid-processing leaves documents stuck
+    on "processing" forever. Each stuck document is claimed atomically (only
+    one worker re-queues it) and retried at most `_MAX_RECOVERY_ATTEMPTS`
+    times, so a document that keeps crashing the worker is marked failed
+    instead of restart-looping the server. Returns how many were re-queued."""
     cutoff = datetime.now(UTC) - _STUCK_AFTER
     try:
         async with session_scope() as session:
-            stuck = await MedicalDocumentRepository(session).list_stuck(updated_before=cutoff)
-            ids = [d.id for d in stuck]
+            claimed = await MedicalDocumentRepository(session).claim_stuck(
+                updated_before=cutoff
+            )
     except Exception:
         logger.exception("Could not look for stuck documents.")
         return 0
 
-    for document_id in ids:
+    requeue = [doc_id for doc_id, attempts in claimed if attempts <= _MAX_RECOVERY_ATTEMPTS]
+    give_up = [doc_id for doc_id, attempts in claimed if attempts > _MAX_RECOVERY_ATTEMPTS]
+    for document_id in give_up:
+        await _mark_failed(document_id)
+    for document_id in requeue:
         asyncio.create_task(process_document(document_id))
-    if ids:
-        logger.warning("Re-queued %d document(s) left unprocessed by a restart.", len(ids))
-    return len(ids)
+    if requeue:
+        logger.warning("Re-queued %d document(s) left unprocessed by a restart.", len(requeue))
+    if give_up:
+        logger.warning(
+            "Marked %d document(s) failed after %d interrupted processing attempts.",
+            len(give_up),
+            _MAX_RECOVERY_ATTEMPTS,
+        )
+    return len(requeue)
 
 
 # ---------------------------------------------------------------------------

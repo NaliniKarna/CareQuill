@@ -84,8 +84,18 @@ auth_rate_limit = rate_limit(
 ai_rate_limit = rate_limit(
     "ai", attempts_attr="ai_rate_limit_attempts", window_attr="ai_rate_limit_window_seconds"
 )
+shared_link_rate_limit = rate_limit(
+    "shared_link",
+    attempts_attr="shared_link_rate_limit_attempts",
+    window_attr="shared_link_rate_limit_window_seconds",
+)
 upload_rate_limit = rate_limit(
     "upload",
     attempts_attr="upload_rate_limit_attempts",
     window_attr="upload_rate_limit_window_seconds",
+)
+family_claim_rate_limit = rate_limit(
+    "family_claim",
+    attempts_attr="auth_rate_limit_attempts",
+    window_attr="auth_rate_limit_window_seconds",
 )

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Contact, Mail, Pencil, Phone, Plus, Send, Trash2 } from "lucide-react";
+import { ChevronRight, Contact, Mail, Pencil, Phone, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ export function DoctorAvatar({ name, className = "size-12 text-base" }: { name: 
   );
 }
 
-export function DoctorsView({ summaryId }: { summaryId?: string } = {}) {
+export function DoctorsView() {
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<DoctorContact | null>(null);
@@ -66,28 +66,20 @@ export function DoctorsView({ summaryId }: { summaryId?: string } = {}) {
     setFormOpen(true);
   };
 
-  const profileHref = (id: string) =>
-    `/appointments?tab=doctors&doctor=${id}${summaryId ? `&summary=${summaryId}` : ""}`;
+  const profileHref = (id: string) => `/appointments?tab=doctors&doctor=${id}`;
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
         compact
         title="Doctors"
-        description="Doctors you see. Open a profile to book a visit or share a health report."
+        description="Doctors you see. Open a profile to see their visits and what you shared."
         action={
           <Button onClick={openAdd}>
             <Plus /> Add doctor
           </Button>
         }
       />
-
-      {summaryId && (
-        <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-accent/60 px-4 py-3 text-sm">
-          <Send className="size-4 shrink-0 text-primary" />
-          <p>Choose a doctor below to share your reviewed Record Summary with.</p>
-        </div>
-      )}
 
       {isLoading && (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

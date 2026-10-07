@@ -12,6 +12,7 @@ import {
   LogOut,
   NotebookPen,
   Menu,
+  Users,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, enabled: true },
   { href: "/medical-records", label: "Medical Records", icon: FileStack, enabled: true },
   { href: "/appointments", label: "Appointments", icon: CalendarClock, enabled: true },
+  { href: "/family", label: "Family", icon: Users, enabled: true },
   { href: "/record-summary", label: "Record Summary", icon: Sparkles, enabled: true },
   { href: "/journal", label: "Journal", icon: NotebookPen, enabled: true },
   { href: "/settings", label: "Settings", icon: Settings, enabled: true },
@@ -41,7 +43,7 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
   return (
     <>
       {NAV_ITEMS.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
         const content = (
           <span
             className={cn(

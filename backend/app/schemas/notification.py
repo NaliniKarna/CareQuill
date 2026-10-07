@@ -11,6 +11,7 @@ NotificationType = Literal[
     "document_processed",
     "report_shared",
     "email_failure",
+    "family_update",
 ]
 
 

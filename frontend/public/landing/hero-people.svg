@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 520" role="img" aria-labelledby="t">
+  <title id="t">A smiling patient and her doctor reviewing health records together</title>
+  <defs>
+    <linearGradient id="coat" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e6f1f5"/>
+    </linearGradient>
+    <linearGradient id="kurta" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#1f8fa8"/>
+      <stop offset="1" stop-color="#156d82"/>
+    </linearGradient>
+    <linearGradient id="scrub" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#5fb7c9"/>
+      <stop offset="1" stop-color="#3f9db2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ===== Doctor (right, slightly behind) ===== -->
+  <g transform="translate(300 40)">
+    <!-- neck -->
+    <path d="M92 150 h36 v34 h-36z" fill="#c98e6a"/>
+    <!-- body: scrubs + white coat -->
+    <path d="M30 230 q0-50 50-56 l60 0 q50 6 50 56 v250 h-160z" fill="url(#scrub)"/>
+    <path d="M20 236 q4-56 62-64 l14 0 l14 70 l14-70 l14 0 q58 8 62 64 v244 h-62 l-28-200 l-28 200 h-62z" fill="url(#coat)" stroke="#cfe2ea" stroke-width="2"/>
+    <!-- lapels -->
+    <path d="M82 172 l28 74 l-20 -6 z" fill="#d9e9ef"/>
+    <path d="M138 172 l-28 74 l20 -6 z" fill="#d9e9ef"/>
+    <!-- pocket + pen -->
+    <rect x="140" y="270" width="32" height="34" rx="4" fill="#ffffff" stroke="#cfe2ea" stroke-width="2"/>
+    <rect x="148" y="256" width="5" height="22" rx="2" fill="#0f6e86"/>
+    <!-- stethoscope -->
+    <path d="M84 178 q-12 70 18 96 q28 22 48-6 q10-16 2-40" fill="none" stroke="#2b3a4a" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="152" cy="226" r="9" fill="#9fb3c2" stroke="#2b3a4a" stroke-width="4"/>
+    <!-- name badge -->
+    <rect x="44" y="282" width="38" height="22" rx="4" fill="#0f6e86"/>
+    <rect x="50" y="290" width="26" height="4" rx="2" fill="#ffffff"/>
+    <!-- head -->
+    <ellipse cx="110" cy="104" rx="52" ry="58" fill="#d9a07a"/>
+    <!-- ears -->
+    <ellipse cx="58" cy="110" rx="9" ry="14" fill="#c98e6a"/>
+    <ellipse cx="162" cy="110" rx="9" ry="14" fill="#c98e6a"/>
+    <!-- hair (short) -->
+    <path d="M58 104 q-6-72 52-74 q58 2 52 72 q-4-24-20-34 q-30 12-64 4 q-16 12-20 32z" fill="#2a1d18"/>
+    <!-- eyebrows -->
+    <path d="M80 92 q12-8 24 0" fill="none" stroke="#2a1d18" stroke-width="4" stroke-linecap="round"/>
+    <path d="M118 92 q12-8 24 0" fill="none" stroke="#2a1d18" stroke-width="4" stroke-linecap="round"/>
+    <!-- smiling eyes -->
+    <path d="M84 108 q8-8 16 0" fill="none" stroke="#2a1d18" stroke-width="4" stroke-linecap="round"/>
+    <path d="M122 108 q8-8 16 0" fill="none" stroke="#2a1d18" stroke-width="4" stroke-linecap="round"/>
+    <!-- cheeks -->
+    <ellipse cx="80" cy="128" rx="9" ry="5" fill="#e88f7a" opacity=".45"/>
+    <ellipse cx="142" cy="128" rx="9" ry="5" fill="#e88f7a" opacity=".45"/>
+    <!-- nose -->
+    <path d="M110 112 q-5 14 2 18" fill="none" stroke="#b97c58" stroke-width="3" stroke-linecap="round"/>
+    <!-- smile -->
+    <path d="M92 136 q18 20 36 0 q-18 8-36 0z" fill="#ffffff" stroke="#8a3b2e" stroke-width="3" stroke-linejoin="round"/>
+    <!-- arm resting -->
+    <path d="M190 260 q30 70 -6 130 l-26 -10 q26-50 6-110z" fill="url(#coat)" stroke="#cfe2ea" stroke-width="2"/>
+  </g>
+
+  <!-- ===== Patient (left, front) ===== -->
+  <g transform="translate(40 70)">
+    <!-- long hair back -->
+    <path d="M72 112 q-4-74 63-76 q67 2 63 76 q8 90 -2 170 h-122 q-10-80 -2-170z" fill="#24160f"/>
+    <!-- neck -->
+    <path d="M118 150 h34 v32 h-34z" fill="#c4875e"/>
+    <!-- body kurta -->
+    <path d="M40 240 q4-56 66-64 l58 0 q60 8 64 64 v210 h-188z" fill="url(#kurta)"/>
+    <!-- neckline trim -->
+    <path d="M110 176 q25 34 50 0" fill="none" stroke="#f2c14e" stroke-width="5" stroke-linecap="round"/>
+    <!-- dupatta (scarf) -->
+    <path d="M96 180 q-30 70 -18 170 l26 4 q-6-90 18-160z" fill="#f2c14e" opacity=".92"/>
+    <!-- arm reaching forward (holds phone, phone sits over the hand in HTML) -->
+    <path d="M200 230 q44 34 62 106" fill="none" stroke="#1a7f96" stroke-width="38" stroke-linecap="round"/>
+    <ellipse cx="270" cy="344" rx="20" ry="16" fill="#d29670"/>
+    <!-- head -->
+    <ellipse cx="135" cy="102" rx="50" ry="56" fill="#d29670"/>
+    <ellipse cx="85" cy="108" rx="8" ry="13" fill="#c4875e"/>
+    <ellipse cx="185" cy="108" rx="8" ry="13" fill="#c4875e"/>
+    <!-- earrings -->
+    <circle cx="85" cy="126" r="4" fill="#f2c14e"/>
+    <circle cx="185" cy="126" r="4" fill="#f2c14e"/>
+    <!-- hair front (center parting) -->
+    <path d="M84 104 q-6-66 52-68 q58 2 52 68 q-8-34-48-44 q-8 22-56 44z" fill="#24160f"/>
+    <path d="M136 38 q-6 10 -4 24" fill="none" stroke="#3a261b" stroke-width="2"/>
+    <!-- bindi -->
+    <circle cx="135" cy="91" r="3.5" fill="#c0392b"/>
+    <!-- eyebrows -->
+    <path d="M104 92 q11-7 22 0" fill="none" stroke="#24160f" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M144 92 q11-7 22 0" fill="none" stroke="#24160f" stroke-width="3.5" stroke-linecap="round"/>
+    <!-- smiling eyes -->
+    <path d="M107 104 q8-8 16 0" fill="none" stroke="#24160f" stroke-width="4" stroke-linecap="round"/>
+    <path d="M147 104 q8-8 16 0" fill="none" stroke="#24160f" stroke-width="4" stroke-linecap="round"/>
+    <ellipse cx="104" cy="124" rx="9" ry="5" fill="#e8806b" opacity=".5"/>
+    <ellipse cx="166" cy="124" rx="9" ry="5" fill="#e8806b" opacity=".5"/>
+    <path d="M135 108 q-5 13 2 17" fill="none" stroke="#b07650" stroke-width="3" stroke-linecap="round"/>
+    <!-- smile -->
+    <path d="M117 132 q18 20 36 0 q-18 8-36 0z" fill="#ffffff" stroke="#9b3d33" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+</svg>

@@ -31,7 +31,7 @@ const QUICK_ACTIONS = [
   { label: "Upload report", href: "/medical-records", icon: FileStack },
   { label: "Book appointment", href: "/appointments", icon: CalendarClock },
   { label: "Create Record Summary", href: "/record-summary", icon: Sparkles },
-  { label: "Share with doctor", href: "/appointments?tab=doctors", icon: Share2 },
+  { label: "Share with doctor", href: "/appointments?tab=share", icon: Share2 },
 ];
 
 export function QuickActionsMenu() {

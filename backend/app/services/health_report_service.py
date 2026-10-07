@@ -26,6 +26,7 @@ from datetime import UTC, date, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import NotFoundError, ValidationAppError
 from app.email.factory import get_email_sender
 from app.email.interface import EmailMessage
@@ -48,11 +49,16 @@ from app.repositories.health_profile_repository import HealthProfileRepository
 from app.repositories.medical_condition_repository import MedicalConditionRepository
 from app.repositories.medical_document_repository import MedicalDocumentRepository
 from app.repositories.medication_repository import MedicationRepository
-from app.schemas.health_report import HealthReportPreview, HealthReportRequest
+from app.schemas.health_report import (
+    HealthReportPreview,
+    HealthReportRequest,
+    ReportDocumentInfo,
+)
 from app.services.audit_service import AuditService
 from app.services.notification_service import NotificationService
 from app.services.timeline_service import TimelineService
 from app.storage.factory import get_storage_backend
+from app.utils.names import doctor_display_name
 
 _SHAREABLE_AI_SUMMARY_STATUSES = ("reviewed", "shared")
 _TIMELINE_EXCERPT_LIMIT = 20
@@ -70,6 +76,17 @@ class _ReportContext:
     timeline_entries: list = field(default_factory=list)
     patient_name: str = "Patient"
     patient_info: dict = field(default_factory=dict)
+
+
+@dataclass
+class RenderedReport:
+    """A generated report plus what went into it (used by QR/link sharing)."""
+
+    pdf_bytes: bytes
+    patient_name: str
+    doctor_name: str | None
+    documents: list[MedicalDocument]
+    included_sections: list[str]
 
 
 class HealthReportService:
@@ -101,6 +118,17 @@ class HealthReportService:
             appointment_reason=ctx.appointment.reason if ctx.appointment else None,
             included_sections=_compute_included_sections(request),
             document_titles=[d.title for d in ctx.documents],
+            documents=[
+                ReportDocumentInfo(
+                    title=d.title,
+                    original_filename=d.original_filename,
+                    mime_type=d.mime_type,
+                    file_size=d.file_size,
+                )
+                for d in ctx.documents
+            ],
+            attachments_total_bytes=sum(d.file_size for d in ctx.documents),
+            max_email_attachments_bytes=settings.max_email_attachments_mb * 1024 * 1024,
             ai_summary_text=_final_summary_text(ctx.ai_summary),
             patient_notes_text=(
                 request.patient_notes_text if request.include_patient_notes else None
@@ -115,6 +143,23 @@ class HealthReportService:
         structured_data = self._build_structured_data(request=request, ctx=ctx)
         generator = get_pdf_generator()
         return await generator.generate_health_summary_pdf(structured_data=structured_data)
+
+    async def render(
+        self, *, patient_id: uuid.UUID, request: HealthReportRequest
+    ) -> RenderedReport:
+        """Same as `generate_pdf`, but also returns what the report covers."""
+        ctx = await self._resolve_context(patient_id=patient_id, request=request)
+        structured_data = self._build_structured_data(request=request, ctx=ctx)
+        pdf_bytes = await get_pdf_generator().generate_health_summary_pdf(
+            structured_data=structured_data
+        )
+        return RenderedReport(
+            pdf_bytes=pdf_bytes,
+            patient_name=ctx.patient_name,
+            doctor_name=ctx.doctor.name if ctx.doctor else None,
+            documents=ctx.documents,
+            included_sections=_compute_included_sections(request),
+        )
 
     @staticmethod
     def build_filename() -> str:
@@ -137,6 +182,15 @@ class HealthReportService:
         assert ctx.doctor is not None  # guaranteed by _resolve_context given the id above
         if not ctx.doctor.email:
             raise ValidationAppError("This doctor contact has no email address on file.")
+        # Check the size up front (from metadata) so an oversized email fails
+        # with a clear message instead of being rejected by the mail server.
+        limit_bytes = settings.max_email_attachments_mb * 1024 * 1024
+        if sum(d.file_size for d in ctx.documents) > limit_bytes:
+            raise ValidationAppError(
+                f"The selected documents are larger than {settings.max_email_attachments_mb} MB, "
+                "which email can't deliver. Attach fewer documents, or share with a QR code "
+                "instead."
+            )
 
         structured_data = self._build_structured_data(request=request, ctx=ctx)
         generator = get_pdf_generator()
@@ -209,7 +263,7 @@ class HealthReportService:
                 patient_id=patient_id,
                 type="report_shared",
                 title="Health report shared",
-                body=f"Your health summary was sent to Dr. {ctx.doctor.name}.",
+                body=f"Your health summary was sent to {doctor_display_name(ctx.doctor.name)}.",
                 related_resource_id=email_log.id,
             )
         else:
@@ -217,7 +271,10 @@ class HealthReportService:
                 patient_id=patient_id,
                 type="email_failure",
                 title="Health report delivery failed",
-                body=f"We couldn't send your health summary to Dr. {ctx.doctor.name}.",
+                body=(
+                    "We couldn't send your health summary to "
+                    f"{doctor_display_name(ctx.doctor.name)}."
+                ),
                 related_resource_id=email_log.id,
             )
 

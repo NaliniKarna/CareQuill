@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarClock,
+  CalendarPlus,
   CalendarX,
   Check,
   Clock,
@@ -17,15 +18,16 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { EmptyState, ErrorState, ListSkeleton, PageHeader } from "@/components/shared/page-states";
+import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/page-states";
 import { appointmentService, type AppointmentFilter } from "@/services/appointment-service";
 import { doctorService } from "@/services/doctor-service";
 import { getApiErrorMessage } from "@/lib/api-client";
 import type { Appointment, AppointmentStatus } from "@/types/api";
 
+import { AppointmentForm } from "./appointment-form";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 
 const STATUS_VARIANT: Record<AppointmentStatus, "default" | "success" | "secondary" | "destructive"> = {
@@ -54,16 +56,19 @@ function DateTile({ iso, muted }: { iso: string; muted: boolean }) {
 }
 
 export function AppointmentsView({
-  embedded = false,
   doctorId,
+  defaultDoctorId,
+  showForm = true,
 }: {
-  embedded?: boolean;
   /** Show only appointments with this doctor (used on a doctor's profile). */
   doctorId?: string;
+  /** Pre-selects a doctor in the "Add appointment" form. */
+  defaultDoctorId?: string;
+  /** The doctor profile shows the list only; adding happens on this tab. */
+  showForm?: boolean;
 } = {}) {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<AppointmentFilter>("upcoming");
-  const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
   const [deleting, setDeleting] = useState<Appointment | null>(null);
   const [cancelling, setCancelling] = useState<Appointment | null>(null);
@@ -123,34 +128,28 @@ export function AppointmentsView({
     onError: (error) => toast.error(getApiErrorMessage(error, "Unable to update this appointment.")),
   });
 
-  const openAdd = () => {
-    setEditing(null);
-    setFormOpen(true);
-  };
-  const openEdit = (appt: Appointment) => {
-    setEditing(appt);
-    setFormOpen(true);
+  const focusAddForm = () => {
+    const form = document.getElementById("add-appointment");
+    form?.scrollIntoView({ behavior: "smooth", block: "start" });
+    form?.querySelector<HTMLElement>("button, input")?.focus({ preventScroll: true });
   };
 
-  return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        compact={embedded}
-        title="Appointments"
-        description="Upcoming and past visits with your doctors."
-        action={
-          <Button onClick={openAdd}>
-            <Plus /> Book appointment
-          </Button>
-        }
-      />
-
-      <Tabs value={filter} onValueChange={(v) => setFilter(v as AppointmentFilter)}>
-        <TabsList>
-          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-          <TabsTrigger value="past">Past</TabsTrigger>
-        </TabsList>
-      </Tabs>
+  const list = (
+    <div className="@container flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">{doctorId ? "Appointments with this doctor" : "Your appointments"}</h2>
+          <p className="text-sm text-muted-foreground">
+            Upcoming visits also appear on your dashboard and in notifications.
+          </p>
+        </div>
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as AppointmentFilter)}>
+          <TabsList>
+            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+            <TabsTrigger value="past">Past</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
 
       {isLoading && <ListSkeleton />}
       {isError && <ErrorState description="Couldn't load your appointments." onRetry={() => refetch()} />}
@@ -160,12 +159,14 @@ export function AppointmentsView({
           icon={CalendarClock}
           title={filter === "upcoming" ? "No upcoming appointments" : "No past appointments"}
           description={
-            filter === "upcoming" ? "Book an appointment to see it here." : "Completed or past visits will show up here."
+            filter === "upcoming"
+              ? "Add a visit you have coming up and it will show here."
+              : "Completed or past visits will show up here."
           }
           action={
-            filter === "upcoming" ? (
-              <Button onClick={openAdd}>
-                <Plus /> Book appointment
+            filter === "upcoming" && showForm ? (
+              <Button variant="outline" onClick={focusAddForm}>
+                <Plus /> Add appointment
               </Button>
             ) : undefined
           }
@@ -176,7 +177,7 @@ export function AppointmentsView({
         <div className="flex flex-col gap-3">
           {data.map((appt) => (
             <Card key={appt.id}>
-              <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <CardContent className="flex flex-col gap-4 @xl:flex-row @xl:items-center">
                 <div className="flex min-w-0 flex-1 items-start gap-4">
                   <DateTile iso={appt.appointment_date} muted={appt.status !== "scheduled"} />
                   <div className="flex min-w-0 flex-col gap-1">
@@ -232,7 +233,7 @@ export function AppointmentsView({
                       >
                         <X className="size-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => openEdit(appt)}>
+                      <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => setEditing(appt)}>
                         <Pencil className="size-4" />
                       </Button>
                     </>
@@ -247,11 +248,39 @@ export function AppointmentsView({
         </div>
       )}
 
+    </div>
+  );
+
+  return (
+    <div
+      className={
+        showForm
+          ? "grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+          : "flex flex-col gap-6"
+      }
+    >
+      {showForm && (
+        <Card id="add-appointment" className="scroll-mt-24 lg:sticky lg:top-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarPlus className="size-5 text-primary" /> Add appointment
+            </CardTitle>
+            <CardDescription>
+              Record a visit you have coming up. CareQuill reminds you 48 hours before.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AppointmentForm defaultDoctorId={defaultDoctorId} />
+          </CardContent>
+        </Card>
+      )}
+
+      {list}
+
       <AppointmentFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
+        open={Boolean(editing)}
+        onOpenChange={(open) => !open && setEditing(null)}
         appointment={editing}
-        defaultDoctorId={doctorId}
       />
 
       <ConfirmDialog

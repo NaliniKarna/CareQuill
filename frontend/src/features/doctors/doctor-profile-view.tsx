@@ -1,17 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CalendarClock, Mail, Pencil, Phone, Send, Trash2, History } from "lucide-react";
+import { ArrowLeft, CalendarPlus, History, Mail, Pencil, Phone, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ErrorState, ListSkeleton } from "@/components/shared/page-states";
 import { AppointmentsView } from "@/features/appointments/appointments-view";
@@ -22,18 +20,16 @@ import { getApiErrorMessage } from "@/lib/api-client";
 import { DoctorAvatar } from "./doctors-view";
 import { DoctorFormDialog } from "./doctor-form-dialog";
 
-// The report builder is large; load it only when a profile is opened.
-const ReportBuilderView = dynamic(
-  () => import("@/features/reports/report-builder-view").then((m) => m.ReportBuilderView),
-  { loading: () => <ListSkeleton /> },
-);
-
-export function DoctorProfileView({ doctorId, summaryId }: { doctorId: string; summaryId?: string }) {
+/**
+ * One doctor: contact details, visits with them and what was shared with
+ * them. Adding visits and sharing happen on their own tabs (pre-filled with
+ * this doctor), so there is a single form for each.
+ */
+export function DoctorProfileView({ doctorId }: { doctorId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [section, setSection] = useState(summaryId ? "share" : "appointments");
 
   const { data: doctors, isLoading, isError, refetch } = useQuery({
     queryKey: ["doctors"],
@@ -105,7 +101,17 @@ export function DoctorProfileView({ doctorId, summaryId }: { doctorId: string; s
               </div>
             </div>
           </div>
-          <div className="flex shrink-0 gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Button size="sm" asChild>
+              <Link href={`/appointments?tab=appointments&doctor=${doctor.id}`}>
+                <CalendarPlus className="size-4" /> Add appointment
+              </Link>
+            </Button>
+            <Button size="sm" variant="secondary" asChild>
+              <Link href={`/appointments?tab=share&doctor=${doctor.id}`}>
+                <Send className="size-4" /> Share report
+              </Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil className="size-4" /> Edit
             </Button>
@@ -116,28 +122,19 @@ export function DoctorProfileView({ doctorId, summaryId }: { doctorId: string; s
         </CardContent>
       </Card>
 
-      <Tabs value={section} onValueChange={setSection}>
-        <TabsList>
-          <TabsTrigger value="appointments">
-            <CalendarClock className="size-4" /> Appointments
-          </TabsTrigger>
-          <TabsTrigger value="share">
-            <Send className="size-4" /> Share report
-          </TabsTrigger>
-          <TabsTrigger value="history">
-            <History className="size-4" /> History
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="appointments" className="pt-4">
-          <AppointmentsView embedded doctorId={doctor.id} />
-        </TabsContent>
-        <TabsContent value="share" className="pt-4">
-          <ReportBuilderView fixedDoctorId={doctor.id} initialAiSummaryId={summaryId} />
-        </TabsContent>
-        <TabsContent value="history" className="pt-4">
-          <EmailHistoryView doctorEmail={doctor.email} />
-        </TabsContent>
-      </Tabs>
+      <div className="grid items-start gap-6 xl:grid-cols-2">
+        <AppointmentsView doctorId={doctor.id} showForm={false} />
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <History className="size-4 text-primary" /> Reports emailed to this doctor
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EmailHistoryView doctorEmail={doctor.email} />
+          </CardContent>
+        </Card>
+      </div>
 
       <DoctorFormDialog open={editOpen} onOpenChange={setEditOpen} doctor={doctor} />
 

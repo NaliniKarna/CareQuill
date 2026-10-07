@@ -132,6 +132,20 @@ class Settings(BaseSettings):
     ai_rate_limit_window_seconds: int = 60
     upload_rate_limit_attempts: int = 30
     upload_rate_limit_window_seconds: int = 60
+    # Public QR/link access to a shared report (no login), per client IP.
+    shared_link_rate_limit_attempts: int = 30
+    shared_link_rate_limit_window_seconds: int = 60
+
+    # --- Report sharing ---
+    # Email providers commonly reject messages over ~25 MB; keep the PDF plus
+    # attached documents under this so the doctor actually receives them.
+    max_email_attachments_mb: int = 20
+    # Longest a patient can keep a QR/link share open.
+    share_link_max_hours: int = 720
+
+    # --- Family circle ---
+    family_max_members: int = 25
+    family_invite_valid_days: int = 7
 
     # --- Observability ---
     slow_request_threshold_ms: int = 1000

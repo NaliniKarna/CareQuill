@@ -350,3 +350,87 @@ async def test_recover_stuck_documents_requeues_old_unprocessed_uploads(client, 
     await asyncio.sleep(0.5)
     after = await client.get(f"/api/v1/documents/{doc_id}", headers=headers)
     assert after.json()["processing_status"] == "processed"
+
+
+async def _upload_stuck_document(client, headers, *, attempts: int = 0) -> str:
+    """Uploads a tiny image and makes it look interrupted 30 minutes ago."""
+    import io
+
+    from PIL import Image
+    from sqlalchemy import update
+
+    from app.db.session import AsyncSessionLocal
+    from app.models.medical_document import MedicalDocument
+
+    buf = io.BytesIO()
+    Image.new("RGB", (50, 50), "white").save(buf, format="PNG")
+    upload = await client.post(
+        "/api/v1/documents",
+        headers=headers,
+        files={"file": ("a.png", buf.getvalue(), "image/png")},
+        data={"title": "Stuck", "category": "xray"},
+    )
+    doc_id = upload.json()["id"]
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            update(MedicalDocument)
+            .where(MedicalDocument.id == doc_id)
+            .values(
+                processing_status="processing",
+                ocr_status="processing",
+                recovery_attempts=attempts,
+                updated_at=datetime.now(UTC) - timedelta(minutes=30),
+            )
+        )
+        await session.commit()
+    return doc_id
+
+
+async def test_recovery_claims_each_document_once_across_workers(client, unique_email):
+    """Every gunicorn worker runs recovery at startup; only one may re-queue
+    a given document, otherwise it is processed (and hits the AI) twice."""
+    import asyncio
+
+    from app.services.document_processing_service import recover_stuck_documents
+
+    data = await register_and_login(client, unique_email)
+    headers = {"Authorization": f"Bearer {data['access_token']}"}
+    await _upload_stuck_document(client, headers)
+
+    results = await asyncio.gather(recover_stuck_documents(), recover_stuck_documents())
+    assert sorted(results) == [0, 1]
+    await asyncio.sleep(0.5)
+
+
+async def test_recovery_gives_up_after_max_attempts_and_reprocess_resets(
+    client, unique_email
+):
+    """A document that keeps getting interrupted must not restart-loop the
+    server: after the retry budget it is marked failed. A patient-requested
+    reprocess starts a fresh budget."""
+    from sqlalchemy import select
+
+    from app.db.session import AsyncSessionLocal
+    from app.models.medical_document import MedicalDocument
+    from app.services.document_processing_service import (
+        _MAX_RECOVERY_ATTEMPTS,
+        recover_stuck_documents,
+    )
+
+    data = await register_and_login(client, unique_email)
+    headers = {"Authorization": f"Bearer {data['access_token']}"}
+    doc_id = await _upload_stuck_document(client, headers, attempts=_MAX_RECOVERY_ATTEMPTS)
+
+    assert await recover_stuck_documents() == 0
+    after = await client.get(f"/api/v1/documents/{doc_id}", headers=headers)
+    assert after.json()["processing_status"] == "failed"
+
+    resp = await client.post(f"/api/v1/documents/{doc_id}/reprocess", headers=headers)
+    assert resp.status_code in (200, 202)
+    async with AsyncSessionLocal() as session:
+        attempts = (
+            await session.execute(
+                select(MedicalDocument.recovery_attempts).where(MedicalDocument.id == doc_id)
+            )
+        ).scalar_one()
+    assert attempts == 0

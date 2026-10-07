@@ -52,6 +52,7 @@ from app.services.audit_service import AuditService
 from app.services.health_snapshot_service import HealthSnapshotService
 from app.services.notification_service import NotificationService
 from app.services.timeline_service import TimelineService
+from app.utils.names import doctor_display_name
 
 _RECENT_TIMELINE_LIMIT = 20
 
@@ -325,7 +326,7 @@ class AISummaryService:
                 patient_id=patient_id,
                 type="email_failure",
                 title="AI summary delivery failed",
-                body=f"We couldn't send your AI summary to Dr. {doctor.name}.",
+                body=f"We couldn't send your AI summary to {doctor_display_name(doctor.name)}.",
                 related_resource_id=email_log.id,
             )
 

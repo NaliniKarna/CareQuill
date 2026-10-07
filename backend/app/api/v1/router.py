@@ -12,6 +12,7 @@ from app.api.v1 import (
     doctors,
     documents,
     email_logs,
+    family,
     health,
     health_snapshots,
     journal,
@@ -20,6 +21,7 @@ from app.api.v1 import (
     preferences,
     profile,
     reports,
+    shared_reports,
     timeline,
 )
 
@@ -40,7 +42,9 @@ api_router.include_router(journal.router)
 api_router.include_router(health_snapshots.router)
 api_router.include_router(ai_summaries.router)
 api_router.include_router(reports.router)
+api_router.include_router(shared_reports.router)
 api_router.include_router(email_logs.router)
+api_router.include_router(family.router)
 api_router.include_router(preferences.router)
 api_router.include_router(notifications.router)
 api_router.include_router(audit_logs.router)

@@ -15,7 +15,16 @@ import type { MedicalDocument } from "@/types/api";
  * (zoom, rotate, brightness/contrast, invert) are purely visual and never
  * alter the stored file. This is for looking at a record, not for diagnosis.
  */
-export function DocumentViewer({ document: doc }: { document: MedicalDocument }) {
+export function DocumentViewer({
+  document: doc,
+  loadPreview,
+  cacheKey,
+}: {
+  document: Pick<MedicalDocument, "id" | "title">;
+  /** Defaults to the patient's own document route; the family page passes its own. */
+  loadPreview?: () => Promise<{ url: string; mimeType: string }>;
+  cacheKey?: string;
+}) {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [brightness, setBrightness] = useState(100);
@@ -23,8 +32,8 @@ export function DocumentViewer({ document: doc }: { document: MedicalDocument })
   const [invert, setInvert] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["document-preview", doc.id],
-    queryFn: () => documentService.preview(doc.id),
+    queryKey: ["document-preview", cacheKey ?? doc.id],
+    queryFn: loadPreview ?? (() => documentService.preview(doc.id)),
     staleTime: Infinity,
     gcTime: 0,
     retry: false,

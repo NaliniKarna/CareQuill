@@ -32,6 +32,13 @@ class HealthReportRequest(BaseModel):
     patient_notes_text: str | None = Field(default=None, max_length=4000)
 
 
+class ReportDocumentInfo(BaseModel):
+    title: str
+    original_filename: str
+    mime_type: str
+    file_size: int
+
+
 class HealthReportPreview(BaseModel):
     """Exactly what the patient will see before they confirm sharing --
     never a PDF, never sent anywhere."""
@@ -42,5 +49,9 @@ class HealthReportPreview(BaseModel):
     appointment_reason: str | None
     included_sections: list[str]
     document_titles: list[str]
+    # The selected documents, attached as the original files when shared.
+    documents: list[ReportDocumentInfo] = Field(default_factory=list)
+    attachments_total_bytes: int = 0
+    max_email_attachments_bytes: int = 0
     ai_summary_text: str | None
     patient_notes_text: str | None

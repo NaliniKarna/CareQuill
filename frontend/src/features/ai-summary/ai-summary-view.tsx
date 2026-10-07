@@ -274,7 +274,7 @@ export function AISummaryView() {
         action={
           selected && (selected.status === "reviewed" || selected.status === "shared") ? (
             <Button asChild>
-              <Link href={`/appointments?tab=doctors&summary=${selected.id}`}>
+              <Link href={`/appointments?tab=share&summary=${selected.id}`}>
                 <Send /> Share with a doctor
               </Link>
             </Button>

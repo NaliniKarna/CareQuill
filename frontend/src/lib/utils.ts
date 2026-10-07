@@ -21,3 +21,18 @@ export function formatRelativeTime(isoDate: string): string {
   if (diffDay < 30) return `${diffDay}d ago`;
   return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
+
+/** Today's date in the user's own time zone (not UTC) as YYYY-MM-DD. */
+export function localTodayIso(): string {
+  const d = new Date();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
+/** Human file size, e.g. "512 B", "34 KB", "2.4 MB". */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}

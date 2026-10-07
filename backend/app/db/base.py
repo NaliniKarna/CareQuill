@@ -13,6 +13,11 @@ from app.models.audit_log import AuditLog  # noqa: E402,F401
 from app.models.doctor_contact import DoctorContact  # noqa: E402,F401
 from app.models.document_extraction import DocumentExtraction  # noqa: E402,F401
 from app.models.email_log import EmailLog  # noqa: E402,F401
+from app.models.family_member import (  # noqa: E402,F401
+    FamilyDocument,
+    FamilyMember,
+    FamilyShareLog,
+)
 from app.models.health_profile import HealthProfile  # noqa: E402,F401
 from app.models.health_snapshot import HealthSnapshot  # noqa: E402,F401
 from app.models.journal_entry import JournalEntry  # noqa: E402,F401
@@ -22,6 +27,7 @@ from app.models.medication import Medication  # noqa: E402,F401
 from app.models.medication_reminder import MedicationReminder  # noqa: E402,F401
 from app.models.notification import Notification  # noqa: E402,F401
 from app.models.refresh_token import RefreshToken  # noqa: E402,F401
+from app.models.report_share_link import ReportShareLink  # noqa: E402,F401
 from app.models.timeline_note import TimelineNote  # noqa: E402,F401
 from app.models.user import User  # noqa: E402,F401
 from app.models.user_preference import UserPreference  # noqa: E402,F401

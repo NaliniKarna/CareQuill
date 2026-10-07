@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import date
 
-from sqlalchemy import BigInteger, Date, ForeignKey, Index, String
+from sqlalchemy import BigInteger, Date, ForeignKey, Index, Integer, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -40,3 +40,9 @@ class MedicalDocument(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # pending | processing | completed | failed | skipped
     processing_status: Mapped[str] = mapped_column(String(30), default="uploaded", nullable=False)
     # uploaded | processing | processed | failed
+    # How many times startup recovery has re-queued this document. Caps the
+    # retries so a document that crashes the worker cannot restart-loop the
+    # server forever. Reset when the patient asks for a reprocess.
+    recovery_attempts: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", nullable=False
+    )

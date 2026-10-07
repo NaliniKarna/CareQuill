@@ -47,4 +47,4 @@ EXPOSE 8000
 # (DB_POOL_SIZE + DB_MAX_OVERFLOW) * workers below Postgres' max_connections.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
     CMD curl -fsS http://localhost:8000/api/v1/health || exit 1
-CMD ["sh", "-c", "exec gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 -w ${WEB_CONCURRENCY:-2} --timeout 120 --graceful-timeout 30 --access-logfile - --forwarded-allow-ips='*'"]
+CMD ["sh", "-c", "exec gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 -w ${WEB_CONCURRENCY:-2} --timeout ${GUNICORN_TIMEOUT:-330} --graceful-timeout 30 --worker-tmp-dir /dev/shm --access-logfile - --forwarded-allow-ips='*'"]

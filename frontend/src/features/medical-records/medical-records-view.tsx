@@ -23,6 +23,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState, ErrorState, ListSkeleton, PageHeader } from "@/components/shared/page-states";
 import { documentService } from "@/services/document-service";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { formatBytes } from "@/lib/utils";
 import type { MedicalDocument } from "@/types/api";
 import type { VariantProps } from "class-variance-authority";
 
@@ -59,12 +60,6 @@ const PAGE_SIZE = 20;
 function categoryLabel(category: string | null): string {
   if (!category) return "Uncategorized";
   return DOCUMENT_CATEGORIES.find((c) => c.value === category)?.label ?? category;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function MedicalRecordsView({ embedded = false }: { embedded?: boolean } = {}) {

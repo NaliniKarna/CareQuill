@@ -148,15 +148,21 @@ async def lifespan(app: FastAPI):
         settings.ocr_enabled,
     )
     recovery_task = None
+    purge_task = None
     if not settings.is_test:
         # Re-queue documents whose background processing was interrupted by
         # a restart (kept as a task so a slow DB can't delay startup).
         from app.services.document_processing_service import recover_stuck_documents
 
         recovery_task = asyncio.create_task(recover_stuck_documents())
+        from app.services.report_share_link_service import purge_expired_share_snapshots
+
+        purge_task = asyncio.create_task(purge_expired_share_snapshots())
     yield
     if recovery_task is not None and not recovery_task.done():
         recovery_task.cancel()
+    if purge_task is not None and not purge_task.done():
+        purge_task.cancel()
     logger.info("CareQuill backend shutting down")
 
 

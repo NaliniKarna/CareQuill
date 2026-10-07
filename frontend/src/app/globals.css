@@ -130,3 +130,42 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Nepali (Devanagari) text: prefer fonts that ship with Windows, macOS and
+   Android, then fall back to the normal system stack. */
+:lang(ne) {
+  font-family:
+    "Noto Sans Devanagari", "Nirmala UI", "Kohinoor Devanagari", "Mangal", ui-sans-serif,
+    system-ui, sans-serif;
+}
+
+/* Public landing page helpers. */
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.landing-float {
+  animation: landing-float 6s ease-in-out infinite;
+}
+
+.landing-float-delay {
+  animation-delay: -3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-float {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}

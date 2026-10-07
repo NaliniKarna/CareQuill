@@ -437,6 +437,13 @@ export interface HealthReportRequest {
   patient_notes_text?: string | null;
 }
 
+export interface ReportDocumentInfo {
+  title: string;
+  original_filename: string;
+  mime_type: string;
+  file_size: number;
+}
+
 export interface HealthReportPreview {
   doctor_name: string | null;
   doctor_email: string | null;
@@ -444,6 +451,10 @@ export interface HealthReportPreview {
   appointment_reason: string | null;
   included_sections: string[];
   document_titles: string[];
+  /** Selected documents; they are attached as the original files when shared. */
+  documents: ReportDocumentInfo[];
+  attachments_total_bytes: number;
+  max_email_attachments_bytes: number;
   ai_summary_text: string | null;
   patient_notes_text: string | null;
 }
@@ -486,7 +497,8 @@ export type NotificationType =
   | "ai_summary_ready"
   | "document_processed"
   | "report_shared"
-  | "email_failure";
+  | "email_failure"
+  | "family_update";
 
 export interface Notification {
   id: string;
@@ -554,4 +566,130 @@ export interface JournalEntryInput {
 export interface JournalListResponse {
   items: JournalEntry[];
   total: number;
+}
+
+// --- QR-code / link sharing ------------------------------------------------
+export type ReportShareLinkStatus = "active" | "expired" | "revoked";
+
+export interface ReportShareLink {
+  id: string;
+  recipient_label: string | null;
+  report_name: string;
+  included_sections: string[];
+  document_count: number;
+  expires_at: string;
+  revoked_at: string | null;
+  view_count: number;
+  last_viewed_at: string | null;
+  created_at: string;
+  status: ReportShareLinkStatus;
+}
+
+/** Returned once on creation; the URL can't be fetched again later. */
+export interface ReportShareLinkCreated extends ReportShareLink {
+  url: string;
+}
+
+export interface SharedDocumentInfo {
+  id: string;
+  title: string;
+  original_filename: string;
+  mime_type: string;
+  file_size: number;
+}
+
+export interface SharedReportInfo {
+  patient_name: string;
+  report_name: string;
+  recipient_label: string | null;
+  included_sections: string[];
+  created_at: string;
+  expires_at: string;
+  documents: SharedDocumentInfo[];
+}
+
+// --- Family circle ------------------------------------------------------
+
+export type FamilyRelation =
+  | "spouse"
+  | "parent"
+  | "child"
+  | "sibling"
+  | "grandparent"
+  | "grandchild"
+  | "other";
+
+/** unlinked: no account, you keep their documents. pending: they claimed it
+ * and have not chosen yet. active: they keep you as a helper. ended: they
+ * removed your access. */
+export type FamilyLinkStatus = "unlinked" | "pending" | "active" | "ended";
+
+export interface FamilyMember {
+  id: string;
+  full_name: string;
+  relation: FamilyRelation;
+  date_of_birth: string | null;
+  blood_group: string | null;
+  notes: string | null;
+  link_status: FamilyLinkStatus;
+  document_count: number | null;
+  invite_active: boolean;
+  invite_expires_at: string | null;
+  claimed_at: string | null;
+  created_at: string;
+}
+
+export interface FamilyMemberInput {
+  full_name: string;
+  relation: FamilyRelation;
+  date_of_birth: string | null;
+  blood_group: string | null;
+  notes: string | null;
+}
+
+export interface FamilyInviteCreated {
+  code: string;
+  expires_at: string;
+}
+
+export interface FamilyLinkedToMe {
+  id: string;
+  manager_name: string;
+  relation: FamilyRelation;
+  link_status: FamilyLinkStatus;
+  claimed_at: string | null;
+}
+
+export interface FamilyDocument {
+  id: string;
+  title: string;
+  category: DocumentCategory | null;
+  original_filename: string;
+  mime_type: string;
+  file_size: number;
+  visit_date: string | null;
+  doctor_name: string | null;
+  hospital_name: string | null;
+  created_at: string;
+  source: "family" | "account";
+  can_delete: boolean;
+}
+
+export interface FamilyShareInput {
+  document_ids: string[];
+  doctor_contact_id: string | null;
+  recipient_email: string | null;
+  recipient_name: string | null;
+  message: string | null;
+}
+
+export interface FamilyShareLog {
+  id: string;
+  recipient_name: string | null;
+  recipient_email: string;
+  document_titles: string[];
+  status: "sent" | "failed";
+  error_message: string | null;
+  sent_at: string | null;
+  created_at: string;
 }

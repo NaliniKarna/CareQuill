@@ -42,6 +42,7 @@ from app.models.audit_log import AuditLog
 from app.models.doctor_contact import DoctorContact
 from app.models.document_extraction import DocumentExtraction
 from app.models.email_log import EmailLog
+from app.models.family_member import FamilyDocument, FamilyMember, FamilyShareLog
 from app.models.health_profile import HealthProfile
 from app.models.health_snapshot import HealthSnapshot
 from app.models.journal_entry import JournalEntry
@@ -50,16 +51,27 @@ from app.models.medical_document import MedicalDocument
 from app.models.medication import Medication
 from app.models.medication_reminder import MedicationReminder
 from app.models.notification import Notification
+from app.models.report_share_link import ReportShareLink
 from app.models.timeline_note import TimelineNote
 from app.models.user import User
 from app.models.user_preference import UserPreference
+from app.repositories.family_repository import FamilyRepository
 from app.services.audit_service import AuditService
 from app.storage.factory import get_storage_backend
 
 DELETE_CONFIRMATION = "DELETE"
 
 # Columns that are internal plumbing, not the patient's data.
-_EXCLUDED_COLUMNS = frozenset({"password_hash", "storage_path", "stored_filename"})
+_EXCLUDED_COLUMNS = frozenset(
+    {
+        "password_hash",
+        "storage_path",
+        "stored_filename",
+        "token_hash",
+        "report_storage_path",
+        "invite_code_hash",
+    }
+)
 
 # (key in data.json, model, ownership column)
 _OWNED_TABLES: list[tuple[str, type, str]] = [
@@ -76,6 +88,9 @@ _OWNED_TABLES: list[tuple[str, type, str]] = [
     ("health_snapshots", HealthSnapshot, "patient_id"),
     ("ai_summaries", AISummary, "patient_id"),
     ("emails_sent", EmailLog, "patient_id"),
+    ("report_share_links", ReportShareLink, "patient_id"),
+    ("family_members", FamilyMember, "manager_id"),
+    ("family_shares", FamilyShareLog, "manager_id"),
     ("notifications", Notification, "patient_id"),
     ("activity_log", AuditLog, "user_id"),
 ]
@@ -171,6 +186,34 @@ class AccountService:
             document_entries.append(entry)
         data["documents"] = document_entries
 
+        family_documents = (
+            (
+                await self.session.execute(
+                    select(FamilyDocument)
+                    .join(FamilyMember, FamilyMember.id == FamilyDocument.family_member_id)
+                    .where(FamilyMember.manager_id == user.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        family_entries: list[dict[str, Any]] = []
+        for family_document in family_documents:
+            entry = _row_to_dict(family_document)
+            try:
+                content = await self.storage.read(storage_path=family_document.storage_path)
+            except FileNotFoundError:
+                entry["file_included"] = False
+            else:
+                member_name = (
+                    f"family_documents/{family_document.id}_{family_document.original_filename}"
+                )
+                files.append((member_name, content))
+                entry["file_included"] = True
+                entry["file_in_archive"] = member_name
+            family_entries.append(entry)
+        data["family_documents"] = family_entries
+
         await self.audit.record(user_id=user.id, event_type="data_export")
         return await asyncio.to_thread(_build_zip, data, files)
 
@@ -192,6 +235,20 @@ class AccountService:
             .scalars()
             .all()
         )
+        storage_paths += [
+            path
+            for path in (
+                await self.session.execute(
+                    select(ReportShareLink.report_storage_path).where(
+                        ReportShareLink.patient_id == user.id
+                    )
+                )
+            )
+            .scalars()
+            .all()
+            if path
+        ]
+        storage_paths += await FamilyRepository(self.session).storage_paths_for_manager(user.id)
         user_id = user.id
         await self.session.execute(delete(User).where(User.id == user_id))
         # Commit BEFORE touching files: if this fails nothing was removed.

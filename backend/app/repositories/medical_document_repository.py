@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.medical_document import MedicalDocument
@@ -84,22 +84,40 @@ class MedicalDocumentRepository:
         )
         return list(result.scalars().all())
 
-    async def list_stuck(
+    async def claim_stuck(
         self, *, updated_before: datetime, limit: int = 50
-    ) -> list[MedicalDocument]:
-        """Documents left in `uploaded`/`processing` since before the cutoff -
-        i.e. the server restarted (or crashed) while their background
-        processing was running. Internal use only (startup recovery)."""
-        result = await self.session.execute(
-            select(MedicalDocument)
+    ) -> list[tuple[uuid.UUID, int]]:
+        """Atomically claims documents left in `uploaded`/`processing` since
+        before the cutoff (the server restarted or crashed while their
+        background processing was running). Claiming bumps `updated_at` and
+        `recovery_attempts` in one UPDATE, so when several workers start at
+        once only one of them gets each document. Returns
+        (document id, attempts including this one). Internal use only."""
+        candidates = (
+            select(MedicalDocument.id)
             .where(
                 MedicalDocument.processing_status.in_(("uploaded", "processing")),
                 MedicalDocument.updated_at < updated_before,
             )
             .order_by(MedicalDocument.updated_at.asc())
             .limit(limit)
+            .scalar_subquery()
         )
-        return list(result.scalars().all())
+        result = await self.session.execute(
+            update(MedicalDocument)
+            .where(
+                MedicalDocument.id.in_(candidates),
+                MedicalDocument.processing_status.in_(("uploaded", "processing")),
+                MedicalDocument.updated_at < updated_before,
+            )
+            .values(
+                recovery_attempts=MedicalDocument.recovery_attempts + 1,
+                updated_at=func.now(),
+            )
+            .returning(MedicalDocument.id, MedicalDocument.recovery_attempts)
+            .execution_options(synchronize_session=False)
+        )
+        return [(row[0], row[1]) for row in result.all()]
 
     async def update_status(
         self,

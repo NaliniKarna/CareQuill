@@ -40,13 +40,13 @@ class DocumentService:
         original_filename: str,
         form: MedicalDocumentUploadForm,
     ) -> MedicalDocument:
-        self._validate_file(file_bytes=file_bytes, original_filename=original_filename)
+        self.validate_file(file_bytes=file_bytes, original_filename=original_filename)
 
         safe_original_name = sanitize_filename(original_filename)
         stored_filename = generate_stored_filename(original_filename)
         storage_path = await self.storage.save(relative_path=stored_filename, content=file_bytes)
 
-        mime_type = _mime_type_for_extension(original_filename)
+        mime_type = mime_type_for_extension(original_filename)
 
         document = await self.repo.create(
             patient_id=patient_id,
@@ -71,7 +71,7 @@ class DocumentService:
         )
         return document
 
-    def _validate_file(self, *, file_bytes: bytes, original_filename: str) -> None:
+    def validate_file(self, *, file_bytes: bytes, original_filename: str) -> None:
         if not file_bytes:
             raise ValidationAppError("Uploaded file is empty.")
 
@@ -162,6 +162,8 @@ class DocumentService:
         document = await self.repo.update_status(
             document, ocr_status="pending", processing_status="uploaded"
         )
+        # A patient-requested retry starts a fresh recovery budget.
+        document.recovery_attempts = 0
         await self.audit.record(
             user_id=patient_id,
             event_type="document_reprocess",
@@ -236,6 +238,6 @@ _EXTENSION_MIME_MAP = {
 }
 
 
-def _mime_type_for_extension(filename: str) -> str:
+def mime_type_for_extension(filename: str) -> str:
     suffix = os.path.splitext(filename)[1].lower()
     return _EXTENSION_MIME_MAP.get(suffix, "application/octet-stream")

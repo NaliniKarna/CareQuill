@@ -4,6 +4,7 @@ import {
   Pill,
   Send,
   Sparkles,
+  Users,
   XCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -17,6 +18,7 @@ export const NOTIFICATION_ICON: Record<NotificationType, LucideIcon> = {
   document_processed: FileText,
   report_shared: Send,
   email_failure: XCircle,
+  family_update: Users,
 };
 
 export const NOTIFICATION_LABEL: Record<NotificationType, string> = {
@@ -26,4 +28,5 @@ export const NOTIFICATION_LABEL: Record<NotificationType, string> = {
   document_processed: "Document",
   report_shared: "Report shared",
   email_failure: "Email failed",
+  family_update: "Family",
 };

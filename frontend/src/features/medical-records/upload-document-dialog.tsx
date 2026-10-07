@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,7 +22,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { documentService } from "@/services/document-service";
 import { getApiErrorMessage } from "@/lib/api-client";
-import type { DocumentCategory } from "@/types/api";
+import type { DocumentCategory, MedicalDocumentUploadInput } from "@/types/api";
 
 export const DOCUMENT_CATEGORIES: { value: DocumentCategory; label: string }[] = [
   { value: "prescription", label: "Prescription" },
@@ -49,12 +49,24 @@ const uploadSchema = z.object({
 
 type UploadFormValues = z.infer<typeof uploadSchema>;
 
+const DEFAULT_INVALIDATE: QueryKey[] = [["documents"], ["dashboard"], ["timeline"]];
+
 export function UploadDocumentDialog({
   open,
   onOpenChange,
+  uploader = documentService.upload,
+  invalidate = DEFAULT_INVALIDATE,
+  description = "Accepted formats: PDF, JPG, PNG. Your original file is always preserved.",
+  successMessage = "Document uploaded. It will process in the background.",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Where the file goes. Defaults to the patient's own medical records. */
+  uploader?: (input: MedicalDocumentUploadInput) => Promise<unknown>;
+  /** Query keys refreshed after a successful upload. */
+  invalidate?: QueryKey[];
+  description?: string;
+  successMessage?: string;
 }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -85,7 +97,7 @@ export function UploadDocumentDialog({
   const mutation = useMutation({
     mutationFn: (values: UploadFormValues) => {
       if (!file) throw new Error("A file is required.");
-      return documentService.upload({
+      return uploader({
         file,
         title: values.title,
         category: (values.category as DocumentCategory) || undefined,
@@ -95,10 +107,8 @@ export function UploadDocumentDialog({
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["timeline"] });
-      toast.success("Document uploaded. It will process in the background.");
+      invalidate.forEach((queryKey) => queryClient.invalidateQueries({ queryKey }));
+      toast.success(successMessage);
       handleOpenChange(false);
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Unable to upload this document.")),
@@ -128,9 +138,7 @@ export function UploadDocumentDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Upload medical document</DialogTitle>
-          <DialogDescription>
-            Accepted formats: PDF, JPG, PNG. Your original file is always preserved.
-          </DialogDescription>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
           <div className="flex flex-col gap-2">

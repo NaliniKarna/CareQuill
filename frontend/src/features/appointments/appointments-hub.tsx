@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, Stethoscope, type LucideIcon } from "lucide-react";
+import { CalendarClock, History, Send, Stethoscope, type LucideIcon } from "lucide-react";
 
-import { PageHeader } from "@/components/shared/page-states";
+import { ListSkeleton, PageHeader } from "@/components/shared/page-states";
 import { DoctorProfileView } from "@/features/doctors/doctor-profile-view";
 import { DoctorsView } from "@/features/doctors/doctors-view";
 import { appointmentService } from "@/services/appointment-service";
@@ -14,14 +15,32 @@ import { cn } from "@/lib/utils";
 
 import { AppointmentsView } from "./appointments-view";
 
-const SECTIONS: { id: "appointments" | "doctors"; label: string; hint: string; icon: LucideIcon }[] = [
+// The report builder and history are large; load them only when opened.
+const ReportBuilderView = dynamic(
+  () => import("@/features/reports/report-builder-view").then((m) => m.ReportBuilderView),
+  { loading: () => <ListSkeleton /> },
+);
+const ShareHistoryView = dynamic(
+  () => import("@/features/reports/share-history-view").then((m) => m.ShareHistoryView),
+  { loading: () => <ListSkeleton /> },
+);
+
+type SectionId = "appointments" | "doctors" | "share" | "history";
+
+const SECTIONS: { id: SectionId; label: string; hint: string; icon: LucideIcon }[] = [
   { id: "appointments", label: "Appointments", hint: "Your visits", icon: CalendarClock },
-  { id: "doctors", label: "Doctors", hint: "Contacts & reports", icon: Stethoscope },
+  { id: "doctors", label: "Doctors", hint: "Your contacts", icon: Stethoscope },
+  { id: "share", label: "Share report", hint: "Email or QR code", icon: Send },
+  { id: "history", label: "History", hint: "What you shared", icon: History },
 ];
+
+function parseTab(value: string | null): SectionId {
+  return SECTIONS.some((s) => s.id === value) ? (value as SectionId) : "appointments";
+}
 
 export function AppointmentsHub() {
   const params = useSearchParams();
-  const active = params.get("tab") === "doctors" ? "doctors" : "appointments";
+  const active = parseTab(params.get("tab"));
   const doctorId = params.get("doctor") ?? undefined;
   const summaryId = params.get("summary") ?? undefined;
 
@@ -30,23 +49,26 @@ export function AppointmentsHub() {
     queryFn: () => appointmentService.list("upcoming"),
   });
   const doctors = useQuery({ queryKey: ["doctors"], queryFn: () => doctorService.list() });
-  const counts = { appointments: upcoming.data?.length, doctors: doctors.data?.length };
+  const counts: Partial<Record<SectionId, number>> = {
+    appointments: upcoming.data?.length,
+    doctors: doctors.data?.length,
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Appointments"
-        description="Book visits, keep your doctors' details, and share health reports with them."
+        description="Keep track of visits and doctors, and share health reports by email or QR code."
       />
 
-      <nav aria-label="Appointment sections" className="grid grid-cols-2 gap-2 sm:max-w-lg sm:gap-3">
+      <nav aria-label="Appointment sections" className="grid grid-cols-2 gap-2 sm:gap-3 lg:max-w-4xl lg:grid-cols-4">
         {SECTIONS.map(({ id, label, hint, icon: Icon }) => {
           const selected = id === active;
           const count = counts[id];
           return (
             <Link
               key={id}
-              href={`/appointments?tab=${id}${id === "doctors" && summaryId ? `&summary=${summaryId}` : ""}`}
+              href={`/appointments?tab=${id}`}
               scroll={false}
               aria-current={selected ? "page" : undefined}
               className={cn(
@@ -79,14 +101,18 @@ export function AppointmentsHub() {
         })}
       </nav>
 
-      <section aria-label={active === "doctors" ? "Doctors" : "Appointments"}>
-        {active === "appointments" && <AppointmentsView embedded />}
+      <section aria-label={SECTIONS.find((s) => s.id === active)?.label}>
+        {active === "appointments" && <AppointmentsView key={doctorId} defaultDoctorId={doctorId} />}
         {active === "doctors" &&
-          (doctorId ? (
-            <DoctorProfileView key={doctorId} doctorId={doctorId} summaryId={summaryId} />
-          ) : (
-            <DoctorsView summaryId={summaryId} />
-          ))}
+          (doctorId ? <DoctorProfileView key={doctorId} doctorId={doctorId} /> : <DoctorsView />)}
+        {active === "share" && (
+          <ReportBuilderView
+            key={`${doctorId ?? ""}-${summaryId ?? ""}`}
+            initialDoctorId={doctorId}
+            initialAiSummaryId={summaryId}
+          />
+        )}
+        {active === "history" && <ShareHistoryView />}
       </section>
     </div>
   );

@@ -12,10 +12,4 @@ export function moodFor(value: number | null) {
   return MOODS.find((m) => m.value === value) ?? null;
 }
 
-/** Today's date in the user's own time zone (not UTC) as YYYY-MM-DD. */
-export function localTodayIso(): string {
-  const d = new Date();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${month}-${day}`;
-}
+export { localTodayIso } from "@/lib/utils";

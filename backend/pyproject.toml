@@ -12,6 +12,11 @@ exclude = ["alembic/versions"]
 select = ["E", "F", "I", "UP", "B"]
 ignore = ["B008"]
 
+[tool.ruff.lint.isort]
+# The local alembic/ migrations folder makes ruff mistake the alembic
+# package for first-party code; it is a third-party dependency.
+known-third-party = ["alembic"]
+
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
