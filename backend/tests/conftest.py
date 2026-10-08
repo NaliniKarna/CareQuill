@@ -102,10 +102,10 @@ def unique_email():
 
 
 async def register_and_login(
-    client: AsyncClient, email: str, password: str = "SuperSecret123"
+    client: AsyncClient, email: str, password: str = "SuperSecret#123"
 ) -> dict:
     resp = await client.post(
-        "/api/v1/auth/register", json={"email": email, "password": password}
+        "/api/v1/auth/register", json={"email": email, "password": password, "accepted_terms": True}
     )
     assert resp.status_code == 201, resp.text
     return resp.json()

@@ -11,27 +11,39 @@ import type { Appointment } from "@/types/api";
 
 import { AppointmentForm } from "./appointment-form";
 
-/** Edits an existing appointment. Adding happens in the inline form. */
+/** Adds a new appointment, or edits one when `appointment` is given. */
 export function AppointmentFormDialog({
   open,
   onOpenChange,
-  appointment,
+  appointment = null,
+  creating = false,
+  defaultDoctorId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  appointment: Appointment | null;
+  appointment?: Appointment | null;
+  /** Open in "add" mode (no appointment to edit). */
+  creating?: boolean;
+  /** Pre-selects a doctor when adding. */
+  defaultDoctorId?: string;
 }) {
+  const isEdit = Boolean(appointment);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit appointment</DialogTitle>
-          <DialogDescription>Update the details of this appointment.</DialogDescription>
+          <DialogTitle>{isEdit ? "Edit appointment" : "Add appointment"}</DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? "Update the details of this appointment."
+              : "Record a visit you have coming up. CareQuill reminds you 48 hours before."}
+          </DialogDescription>
         </DialogHeader>
-        {appointment && (
+        {(appointment || creating) && (
           <AppointmentForm
             appointment={appointment}
-            idPrefix="appt-edit"
+            defaultDoctorId={defaultDoctorId}
+            idPrefix={isEdit ? "appt-edit" : "appt-new"}
             onSaved={() => onOpenChange(false)}
             onCancel={() => onOpenChange(false)}
           />

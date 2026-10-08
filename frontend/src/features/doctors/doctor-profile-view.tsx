@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ErrorState, ListSkeleton } from "@/components/shared/page-states";
+import { AppointmentFormDialog } from "@/features/appointments/appointment-form-dialog";
 import { AppointmentsView } from "@/features/appointments/appointments-view";
 import { EmailHistoryView } from "@/features/reports/email-history-view";
 import { doctorService } from "@/services/doctor-service";
@@ -29,6 +30,7 @@ export function DoctorProfileView({ doctorId }: { doctorId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [addApptOpen, setAddApptOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { data: doctors, isLoading, isError, refetch } = useQuery({
@@ -43,14 +45,14 @@ export function DoctorProfileView({ doctorId }: { doctorId: string }) {
       queryClient.invalidateQueries({ queryKey: ["doctors"] });
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast.success("Doctor contact removed.");
-      router.replace("/appointments?tab=doctors");
+      router.replace("/appointments");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Unable to remove this contact.")),
   });
 
   const back = (
     <Button asChild variant="ghost" size="sm" className="-ml-2 self-start">
-      <Link href="/appointments?tab=doctors">
+      <Link href="/appointments">
         <ArrowLeft className="size-4" /> All doctors
       </Link>
     </Button>
@@ -102,10 +104,8 @@ export function DoctorProfileView({ doctorId }: { doctorId: string }) {
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
-            <Button size="sm" asChild>
-              <Link href={`/appointments?tab=appointments&doctor=${doctor.id}`}>
-                <CalendarPlus className="size-4" /> Add appointment
-              </Link>
+            <Button size="sm" onClick={() => setAddApptOpen(true)}>
+              <CalendarPlus className="size-4" /> Add appointment
             </Button>
             <Button size="sm" variant="secondary" asChild>
               <Link href={`/appointments?tab=share&doctor=${doctor.id}`}>
@@ -123,7 +123,7 @@ export function DoctorProfileView({ doctorId }: { doctorId: string }) {
       </Card>
 
       <div className="grid items-start gap-6 xl:grid-cols-2">
-        <AppointmentsView doctorId={doctor.id} showForm={false} />
+        <AppointmentsView doctorId={doctor.id} onAdd={() => setAddApptOpen(true)} />
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -137,6 +137,12 @@ export function DoctorProfileView({ doctorId }: { doctorId: string }) {
       </div>
 
       <DoctorFormDialog open={editOpen} onOpenChange={setEditOpen} doctor={doctor} />
+      <AppointmentFormDialog
+        open={addApptOpen}
+        onOpenChange={setAddApptOpen}
+        creating
+        defaultDoctorId={doctor.id}
+      />
 
       <ConfirmDialog
         open={deleteOpen}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
@@ -13,27 +13,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authService } from "@/services/auth-service";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { passwordProblem } from "@/lib/password";
+import { PasswordStrength } from "@/components/shared/password-strength";
+import { useAuth } from "@/hooks/use-auth";
 
 const schema = z
   .object({
     current_password: z.string().min(1, "Enter your current password"),
-    new_password: z.string().min(8, "New password must be at least 8 characters"),
+    new_password: z.string().min(1, "Enter a new password"),
     confirm_password: z.string().min(1, "Confirm your new password"),
   })
-  .refine((values) => values.new_password === values.confirm_password, {
-    message: "Passwords don't match",
-    path: ["confirm_password"],
+  .superRefine((values, ctx) => {
+    const problem = passwordProblem(values.new_password);
+    if (problem) ctx.addIssue({ code: "custom", message: problem, path: ["new_password"] });
+    if (values.new_password !== values.confirm_password) {
+      ctx.addIssue({ code: "custom", message: "Passwords don't match", path: ["confirm_password"] });
+    }
   });
 
 type FormValues = z.infer<typeof schema>;
 
 export function ChangePasswordForm() {
+  const { user } = useAuth();
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const newPassword = useWatch({ control, name: "new_password" }) ?? "";
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -103,6 +112,7 @@ export function ChangePasswordForm() {
               )}
             </div>
           </div>
+          <PasswordStrength password={newPassword} email={user?.email} />
           <Button type="submit" className="self-start" disabled={mutation.isPending}>
             {mutation.isPending ? <Loader2 className="animate-spin" /> : <KeyRound />}
             Change password

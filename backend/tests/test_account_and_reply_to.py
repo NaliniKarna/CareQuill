@@ -148,7 +148,7 @@ async def test_delete_requires_correct_password_and_confirmation(client, unique_
     no_phrase = await client.post(
         "/api/v1/account/delete",
         headers=headers,
-        json={"password": "SuperSecret123", "confirmation": "yes"},
+        json={"password": "SuperSecret#123", "confirmation": "yes"},
     )
     assert no_phrase.status_code in (400, 422)
     # Nothing was removed.
@@ -167,7 +167,7 @@ async def test_delete_removes_everything_including_files_and_blocks_login(client
     resp = await client.post(
         "/api/v1/account/delete",
         headers=headers,
-        json={"password": "SuperSecret123", "confirmation": "DELETE"},
+        json={"password": "SuperSecret#123", "confirmation": "DELETE"},
     )
     assert resp.status_code == 204, resp.text
 
@@ -185,7 +185,7 @@ async def test_delete_removes_everything_including_files_and_blocks_login(client
     # The old token and the old credentials are now useless.
     assert (await client.get("/api/v1/medications", headers=headers)).status_code == 401
     login = await client.post(
-        "/api/v1/auth/login", json={"email": unique_email, "password": "SuperSecret123"}
+        "/api/v1/auth/login", json={"email": unique_email, "password": "SuperSecret#123"}
     )
     assert login.status_code == 401
 
@@ -197,7 +197,7 @@ async def test_delete_only_affects_the_caller(client, unique_email):
     resp = await client.post(
         "/api/v1/account/delete",
         headers=_h(victim["access_token"]),
-        json={"password": "SuperSecret123", "confirmation": "DELETE"},
+        json={"password": "SuperSecret#123", "confirmation": "DELETE"},
     )
     assert resp.status_code == 204
     docs = await client.get("/api/v1/documents", headers=other["headers"])

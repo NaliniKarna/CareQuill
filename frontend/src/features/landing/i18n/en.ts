@@ -23,11 +23,10 @@ export const en = {
     description:
       "Keep your reports, medicines, allergies, conditions, doctors and appointments in one secure place, and walk into every consultation prepared.",
     bullets: [
-      "All your medical documents and reports in one place",
-      "Medicine reminders so you never miss a dose",
-      "AI and OCR help organise your records, and you approve every change",
-      "Clear health summaries and PDF reports for your doctor",
-      "Private by design: your data is never sold",
+      "Your whole health story in one secure place: every report, medicine, allergy and doctor",
+      "Walk into every consultation prepared, with a clear summary and PDF report for your doctor",
+      "AI and OCR do the organising, but nothing is saved until you approve it",
+      "Private by design: you own your data and it is never sold",
     ],
     ctaTitle: "Create your account",
     ctaText: "Free to start. Takes less than a minute.",
@@ -37,7 +36,7 @@ export const en = {
     imageAlt: "A smiling patient and doctor using the CareQuill app",
     labels: {
       records: "Medical records",
-      meds: "Medicine reminders",
+      family: "Family care",
       appointments: "Appointments",
       summary: "Record Summary",
       share: "Share with doctor",
@@ -45,10 +44,11 @@ export const en = {
     },
   },
   why: {
-    eyebrow: "The problem",
+    eyebrow: "Why CareQuill",
     title: "Why do we need CareQuill?",
     description:
-      "Most patients carry their health history in paper files, phone galleries and memory. Reports get lost, the same story is repeated at every clinic, and important details like allergies or current medicines are easy to forget during a short consultation. CareQuill brings everything together, helps you keep it accurate, and lets you share exactly what your doctor needs.",
+      "Our mission is simple: every patient should be able to walk into any consultation with their complete, accurate health story, and stay in control of who sees it. Today that story is scattered across paper files, phone galleries and memory. CareQuill brings it together, keeps it accurate, and shares only what you choose.",
+    problemsTitle: "Without a health record of your own",
     problems: [
       {
         title: "Scattered records",
@@ -61,6 +61,36 @@ export const en = {
       {
         title: "Missed details",
         text: "Allergies, doses and past results are easy to forget when time is short.",
+      },
+      {
+        title: "Family left behind",
+        text: "Parents' and children's papers are in someone else's bag, or nowhere at all.",
+      },
+    ],
+    solutionTitle: "With CareQuill",
+    solutions: [
+      "One secure place for every report, prescription and scan, originals kept untouched",
+      "Your conditions, allergies and medicines recorded once, always up to date",
+      "A clear summary and PDF report ready before the appointment starts",
+      "A family circle to manage records for people you care for",
+    ],
+    principlesTitle: "What we promise",
+    principles: [
+      {
+        title: "You stay in control",
+        text: "Your records belong to you. Export or delete them at any time.",
+      },
+      {
+        title: "AI suggests, you decide",
+        text: "OCR and AI only propose. Nothing joins your record until you approve it.",
+      },
+      {
+        title: "No diagnosis, ever",
+        text: "CareQuill organises your information. It never diagnoses or recommends treatment.",
+      },
+      {
+        title: "Private by design",
+        text: "Your data is never sold and never used for advertising. You choose who sees what.",
       },
     ],
     featuresEyebrow: "Features",
@@ -143,6 +173,17 @@ export const en = {
           "Or show a QR code that opens the report, and stop it any time",
         ],
         float: "Share by email or QR code",
+      },
+      family: {
+        tag: "Family circle",
+        title: "Care for the whole family",
+        text: "Keep health records for parents, children and relatives in one circle, and hand them over when they are ready to manage their own.",
+        points: [
+          "Add family members and upload their reports and prescriptions",
+          "Share a family member's report with their doctor in a few taps",
+          "Invite code transfers a profile to their own account, and they decide what you keep",
+        ],
+        float: "You manage, they stay in control",
       },
       journal: {
         tag: "Health journal",
@@ -260,7 +301,11 @@ export const en = {
       message: "Message",
       messagePlaceholder: "How can we help?",
       submit: "Send message",
-      note: "This opens your email app with your message ready to send. Please do not include medical details.",
+      note: "Your message is sent straight to our support team. Please do not include medical details.",
+      sending: "Sending…",
+      success: "Thank you. Your message has been sent. We will reply by email.",
+      failed: "We could not send your message. Please try again, or email us directly at",
+      tooMany: "Too many messages from this device. Please try again later.",
       errors: {
         name: "Please enter your name.",
         email: "Please enter a valid email address.",
@@ -283,6 +328,8 @@ export const en = {
     disclaimer:
       "CareQuill is an organisational and communication tool. It does not diagnose conditions, prescribe treatment or replace professional medical advice. In an emergency, contact your nearest hospital.",
     rights: "All rights reserved.",
+    privacy: "Privacy Policy",
+    terms: "Terms of Use",
   },
 };
 

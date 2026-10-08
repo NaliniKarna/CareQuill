@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarPlus, Loader2, Save } from "lucide-react";
+import { CalendarPlus, Loader2, Lock, Save, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,7 @@ function toFormValues(appointment: Appointment | null, defaultDoctorId = ""): Ap
 /**
  * Add or edit an appointment the patient already has (CareQuill does not
  * book with clinics; it records the visit so it shows on the dashboard and
- * in reminders). Used inline on the Appointments tab and inside the edit
+ * in reminders). Used inside the add and edit
  * dialog, so there is one form for both.
  */
 export function AppointmentForm({
@@ -72,6 +71,7 @@ export function AppointmentForm({
     control,
     handleSubmit,
     reset,
+    setError,
     formState: { errors },
   } = useForm<AppointmentFormValues>({
     resolver: zodResolver(appointmentSchema),
@@ -100,6 +100,10 @@ export function AppointmentForm({
   });
 
   const onSubmit = (values: AppointmentFormValues) => {
+    if (!isEditing && !values.doctor_contact_id) {
+      setError("doctor_contact_id", { message: "Choose the doctor for this visit." });
+      return;
+    }
     mutation.mutate({
       doctor_contact_id: values.doctor_contact_id || null,
       appointment_date: values.appointment_date,
@@ -111,10 +115,35 @@ export function AppointmentForm({
 
   const id = (name: string) => `${idPrefix}-${name}`;
 
+  // A new appointment needs a saved doctor, so step 1 comes first.
+  if (!isEditing && doctors && doctors.length === 0) {
+    const goToDoctorForm = () => {
+      const form = document.getElementById("add-doctor");
+      form?.scrollIntoView({ behavior: "smooth", block: "start" });
+      form?.querySelector<HTMLElement>("input")?.focus({ preventScroll: true });
+    };
+    return (
+      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted/40 px-4 py-8 text-center">
+        <span className="flex size-11 items-center justify-center rounded-full bg-accent text-primary">
+          <Lock className="size-5" aria-hidden />
+        </span>
+        <p className="font-medium">Add a doctor first</p>
+        <p className="max-w-xs text-sm text-muted-foreground">
+          Appointments are linked to a doctor. Save your doctor in step 1, then come back here.
+        </p>
+        <Button type="button" variant="outline" onClick={goToDoctorForm}>
+          <UserPlus /> Add a doctor
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
       <div className="flex flex-col gap-2">
-        <Label htmlFor={id("doctor")}>Doctor</Label>
+        <Label htmlFor={id("doctor")}>
+          Doctor {!isEditing && <span className="text-destructive">*</span>}
+        </Label>
         <Controller
           control={control}
           name="doctor_contact_id"
@@ -123,11 +152,15 @@ export function AppointmentForm({
               value={field.value || "none"}
               onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
             >
-              <SelectTrigger id={id("doctor")} className="w-full">
+              <SelectTrigger
+                id={id("doctor")}
+                className="w-full"
+                aria-invalid={Boolean(errors.doctor_contact_id)}
+              >
                 <SelectValue placeholder={doctorsLoading ? "Loading..." : "Choose a doctor"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No doctor / not listed</SelectItem>
+                {isEditing && <SelectItem value="none">No doctor / not listed</SelectItem>}
                 {doctors?.map((doctor) => (
                   <SelectItem key={doctor.id} value={doctor.id}>
                     {doctor.name}
@@ -138,14 +171,8 @@ export function AppointmentForm({
             </Select>
           )}
         />
-        {doctors?.length === 0 && (
-          <p className="text-xs text-muted-foreground">
-            No doctors saved yet.{" "}
-            <Link href="/appointments?tab=doctors" className="font-medium text-primary hover:underline">
-              Add a doctor
-            </Link>{" "}
-            to link them to visits.
-          </p>
+        {errors.doctor_contact_id && (
+          <p className="text-xs text-destructive">{errors.doctor_contact_id.message}</p>
         )}
       </div>
 

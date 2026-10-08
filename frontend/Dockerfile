@@ -36,7 +36,7 @@ COPY . .
 # as a build arg when building for a specific deployment target.
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
-ARG NEXT_PUBLIC_CONTACT_EMAIL=support@carequill.app
+ARG NEXT_PUBLIC_CONTACT_EMAIL=supportcarequill@gmail.com
 ENV NEXT_PUBLIC_CONTACT_EMAIL=$NEXT_PUBLIC_CONTACT_EMAIL
 RUN npm run build
 

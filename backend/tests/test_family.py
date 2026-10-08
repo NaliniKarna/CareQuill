@@ -417,7 +417,7 @@ async def test_export_and_delete_account_include_family_data(client, unique_emai
     gone = await client.post(
         "/api/v1/account/delete",
         headers=headers,
-        json={"password": "SuperSecret123", "confirmation": "DELETE"},
+        json={"password": "SuperSecret#123", "confirmation": "DELETE"},
     )
     assert gone.status_code in (200, 204), gone.text
     assert not await storage.exists(storage_path=path)

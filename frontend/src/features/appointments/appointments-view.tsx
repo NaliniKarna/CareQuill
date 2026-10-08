@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarClock,
-  CalendarPlus,
   CalendarX,
   Check,
   Clock,
@@ -18,7 +17,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/page-states";
@@ -27,7 +26,6 @@ import { doctorService } from "@/services/doctor-service";
 import { getApiErrorMessage } from "@/lib/api-client";
 import type { Appointment, AppointmentStatus } from "@/types/api";
 
-import { AppointmentForm } from "./appointment-form";
 import { AppointmentFormDialog } from "./appointment-form-dialog";
 
 const STATUS_VARIANT: Record<AppointmentStatus, "default" | "success" | "secondary" | "destructive"> = {
@@ -37,9 +35,9 @@ const STATUS_VARIANT: Record<AppointmentStatus, "default" | "success" | "seconda
   missed: "destructive",
 };
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-function DateTile({ iso, muted }: { iso: string; muted: boolean }) {
+export function DateTile({ iso, muted }: { iso: string; muted: boolean }) {
   const [, month, day] = iso.split("-");
   return (
     <div
@@ -57,15 +55,12 @@ function DateTile({ iso, muted }: { iso: string; muted: boolean }) {
 
 export function AppointmentsView({
   doctorId,
-  defaultDoctorId,
-  showForm = true,
+  onAdd,
 }: {
   /** Show only appointments with this doctor (used on a doctor's profile). */
   doctorId?: string;
-  /** Pre-selects a doctor in the "Add appointment" form. */
-  defaultDoctorId?: string;
-  /** The doctor profile shows the list only; adding happens on this tab. */
-  showForm?: boolean;
+  /** Adds an "Add appointment" button to the empty state. */
+  onAdd?: () => void;
 } = {}) {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<AppointmentFilter>("upcoming");
@@ -128,12 +123,6 @@ export function AppointmentsView({
     onError: (error) => toast.error(getApiErrorMessage(error, "Unable to update this appointment.")),
   });
 
-  const focusAddForm = () => {
-    const form = document.getElementById("add-appointment");
-    form?.scrollIntoView({ behavior: "smooth", block: "start" });
-    form?.querySelector<HTMLElement>("button, input")?.focus({ preventScroll: true });
-  };
-
   const list = (
     <div className="@container flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -164,8 +153,8 @@ export function AppointmentsView({
               : "Completed or past visits will show up here."
           }
           action={
-            filter === "upcoming" && showForm ? (
-              <Button variant="outline" onClick={focusAddForm}>
+            filter === "upcoming" && onAdd ? (
+              <Button variant="outline" onClick={onAdd}>
                 <Plus /> Add appointment
               </Button>
             ) : undefined
@@ -252,29 +241,7 @@ export function AppointmentsView({
   );
 
   return (
-    <div
-      className={
-        showForm
-          ? "grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
-          : "flex flex-col gap-6"
-      }
-    >
-      {showForm && (
-        <Card id="add-appointment" className="scroll-mt-24 lg:sticky lg:top-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarPlus className="size-5 text-primary" /> Add appointment
-            </CardTitle>
-            <CardDescription>
-              Record a visit you have coming up. CareQuill reminds you 48 hours before.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AppointmentForm defaultDoctorId={defaultDoctorId} />
-          </CardContent>
-        </Card>
-      )}
-
+    <div className="flex flex-col gap-6">
       {list}
 
       <AppointmentFormDialog

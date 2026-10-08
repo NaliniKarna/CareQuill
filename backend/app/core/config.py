@@ -143,6 +143,14 @@ class Settings(BaseSettings):
     # Longest a patient can keep a QR/link share open.
     share_link_max_hours: int = 720
 
+    # --- Consent & contact ---
+    # Bump when the Terms or Privacy Policy change in a way users must re-accept.
+    terms_version: str = "2026-10"
+    # Where the public Contact Us form is delivered.
+    contact_receiver_email: str = "supportcarequill@gmail.com"
+    contact_rate_limit_attempts: int = 5
+    contact_rate_limit_window_seconds: int = 3600
+
     # --- Family circle ---
     family_max_members: int = 25
     family_invite_valid_days: int = 7

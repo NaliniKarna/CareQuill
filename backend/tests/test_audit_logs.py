@@ -15,13 +15,13 @@ async def test_audit_logs_requires_authentication(client):
 
 
 async def test_audit_log_records_login_and_medication_create(client, unique_email):
-    data = await register_and_login(client, unique_email, password="SuperSecret123")
+    data = await register_and_login(client, unique_email, password="SuperSecret#123")
     headers = _auth_headers(data["access_token"])
 
     # register_and_login only registers -- log in explicitly to record a
     # `login` event too.
     await client.post(
-        "/api/v1/auth/login", json={"email": unique_email, "password": "SuperSecret123"}
+        "/api/v1/auth/login", json={"email": unique_email, "password": "SuperSecret#123"}
     )
     await client.post("/api/v1/medications", headers=headers, json={"name": "Metformin"})
 
@@ -38,7 +38,7 @@ async def test_audit_log_records_login_and_medication_create(client, unique_emai
 
 
 async def test_users_only_see_their_own_audit_logs(client, unique_email):
-    user_a = await register_and_login(client, unique_email, password="SuperSecret123")
+    user_a = await register_and_login(client, unique_email, password="SuperSecret#123")
     headers_a = _auth_headers(user_a["access_token"])
     await client.post("/api/v1/medications", headers=headers_a, json={"name": "Metformin"})
 

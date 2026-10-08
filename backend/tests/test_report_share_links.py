@@ -211,7 +211,7 @@ async def test_account_deletion_removes_shared_report_snapshots(client, unique_e
     resp = await client.post(
         "/api/v1/account/delete",
         headers=headers,
-        json={"password": "SuperSecret123", "confirmation": "DELETE"},
+        json={"password": "SuperSecret#123", "confirmation": "DELETE"},
     )
     assert resp.status_code in (200, 204), resp.text
     assert not await storage.exists(storage_path=path)

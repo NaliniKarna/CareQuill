@@ -4,6 +4,8 @@ import type { AuthResponse, ChangePasswordInput, User } from "@/types/api";
 export interface RegisterPayload {
   email: string;
   password: string;
+  /** Consent to the Terms and Privacy Policy (required by the server). */
+  accepted_terms: boolean;
 }
 
 export interface LoginPayload {

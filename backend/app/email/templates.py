@@ -91,3 +91,19 @@ def render_family_share_email(
         "family.</p><p>Regards,<br/>CareQuill</p>"
     )
     return html_body, text_body
+
+
+def render_contact_email(*, name: str, email: str, message: str) -> tuple[str, str]:
+    """Returns (html_body, text_body) for a Contact Us submission sent to the
+    CareQuill team. Every user-supplied value is escaped."""
+    text_body = (
+        "New message from the CareQuill contact form\n\n"
+        f"Name: {name}\nEmail: {email}\n\n{message}\n"
+    )
+    html_body = (
+        "<p><strong>New message from the CareQuill contact form</strong></p>"
+        f"<p>Name: {html.escape(name)}<br/>Email: {html.escape(email)}</p>"
+        f"<p style='white-space:pre-wrap'>{html.escape(message)}</p>"
+        "<p style='color:#666;font-size:12px'>Reply to this email to answer the sender.</p>"
+    )
+    return html_body, text_body

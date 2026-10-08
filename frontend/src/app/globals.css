@@ -158,9 +158,73 @@
   animation-delay: -3s;
 }
 
+/* 3D depth helpers for the landing features. Motion is decorative only. */
+.landing-stage {
+  perspective: 1400px;
+}
+
+.landing-tilt {
+  transform-style: preserve-3d;
+  transform: rotateY(var(--tilt-y, -9deg)) rotateX(var(--tilt-x, 4deg));
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.landing-tilt-right {
+  --tilt-y: 9deg;
+}
+
+.landing-depth-1 {
+  transform: translateZ(40px);
+}
+
+.landing-depth-2 {
+  transform: translateZ(70px);
+}
+
+@keyframes landing-orb {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(14px, -18px, 0) scale(1.08);
+  }
+}
+
+.landing-orb {
+  animation: landing-orb 11s ease-in-out infinite;
+}
+
+.landing-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.landing-reveal[data-visible="true"] {
+  opacity: 1;
+  transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .landing-float {
+  .landing-float,
+  .landing-orb {
     animation: none;
+  }
+
+  .landing-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .landing-tilt {
+    transform: none;
+    transition: none;
   }
 }
 

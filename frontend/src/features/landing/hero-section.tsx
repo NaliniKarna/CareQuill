@@ -5,10 +5,10 @@ import {
   CalendarClock,
   CheckCircle2,
   FileText,
-  Pill,
   Send,
   ShieldCheck,
   Sparkles,
+  Users,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -113,8 +113,8 @@ export function HeroSection({ t }: { t: LandingCopy }) {
               className="landing-float-delay absolute top-[2%] right-0"
             />
             <FloatChip
-              icon={Pill}
-              label={t.hero.labels.meds}
+              icon={Users}
+              label={t.hero.labels.family}
               tone="success"
               className="landing-float-delay absolute top-[58%] -left-2 hidden sm:flex"
             />

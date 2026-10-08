@@ -57,8 +57,14 @@ class AuthService:
             raise ConflictError("An account with this email already exists.")
 
         password_hash = await hash_password_async(password)
-        user = await self.users.create(email=email, password_hash=password_hash)
+        user = await self.users.create(
+            email=email,
+            password_hash=password_hash,
+            terms_accepted_at=datetime.now(UTC),
+            terms_version=settings.terms_version,
+        )
         tokens = await self._issue_token_pair(user.id)
+        await self.audit.record(user_id=user.id, event_type="consent_given")
         await self.audit.record(user_id=user.id, event_type="login")
         return user, tokens
 

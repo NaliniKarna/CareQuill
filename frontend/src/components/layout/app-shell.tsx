@@ -33,9 +33,9 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, enabled: true },
   { href: "/medical-records", label: "Medical Records", icon: FileStack, enabled: true },
   { href: "/appointments", label: "Appointments", icon: CalendarClock, enabled: true },
-  { href: "/family", label: "Family", icon: Users, enabled: true },
   { href: "/record-summary", label: "Record Summary", icon: Sparkles, enabled: true },
   { href: "/journal", label: "Journal", icon: NotebookPen, enabled: true },
+  { href: "/family", label: "Family", icon: Users, enabled: true },
   { href: "/settings", label: "Settings", icon: Settings, enabled: true },
 ];
 

@@ -15,7 +15,8 @@ async def test_register_creates_user_and_returns_tokens(client, unique_email):
 
 async def test_register_rejects_short_password(client, unique_email):
     resp = await client.post(
-        "/api/v1/auth/register", json={"email": unique_email, "password": "short"}
+        "/api/v1/auth/register",
+        json={"email": unique_email, "password": "short", "accepted_terms": True},
     )
     assert resp.status_code == 422
 
@@ -24,24 +25,24 @@ async def test_register_duplicate_email_conflicts(client, unique_email):
     await register_and_login(client, unique_email)
     resp = await client.post(
         "/api/v1/auth/register",
-        json={"email": unique_email, "password": "AnotherPass123"},
+        json={"email": unique_email, "password": "AnotherPass#123", "accepted_terms": True},
     )
     assert resp.status_code == 409
     assert resp.json()["error"]["code"] == "conflict"
 
 
 async def test_login_success(client, unique_email):
-    await register_and_login(client, unique_email, password="SuperSecret123")
+    await register_and_login(client, unique_email, password="SuperSecret#123")
     resp = await client.post(
         "/api/v1/auth/login",
-        json={"email": unique_email, "password": "SuperSecret123"},
+        json={"email": unique_email, "password": "SuperSecret#123"},
     )
     assert resp.status_code == 200
     assert "access_token" in resp.json()
 
 
 async def test_login_wrong_password_fails(client, unique_email):
-    await register_and_login(client, unique_email, password="SuperSecret123")
+    await register_and_login(client, unique_email, password="SuperSecret#123")
     resp = await client.post(
         "/api/v1/auth/login", json={"email": unique_email, "password": "WrongPassword"}
     )
@@ -128,7 +129,7 @@ async def test_forgot_password_does_not_reveal_account_existence(client, unique_
 async def test_reset_password_with_invalid_token_fails(client):
     resp = await client.post(
         "/api/v1/auth/reset-password",
-        json={"token": "bogus-token", "new_password": "BrandNewPass123"},
+        json={"token": "bogus-token", "new_password": "BrandNewPass#123"},
     )
     assert resp.status_code == 422
 
@@ -150,19 +151,19 @@ async def test_password_is_never_returned(client, unique_email):
 async def test_change_password_requires_authentication(client):
     resp = await client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "whatever", "new_password": "NewPassword123"},
+        json={"current_password": "whatever", "new_password": "NewPassword#123"},
     )
     assert resp.status_code in (401, 403)
 
 
 async def test_change_password_rejects_wrong_current_password(client, unique_email):
-    data = await register_and_login(client, unique_email, password="SuperSecret123")
+    data = await register_and_login(client, unique_email, password="SuperSecret#123")
     headers = {"Authorization": f"Bearer {data['access_token']}"}
 
     resp = await client.post(
         "/api/v1/auth/change-password",
         headers=headers,
-        json={"current_password": "WrongCurrentPassword", "new_password": "BrandNewPass123"},
+        json={"current_password": "WrongCurrentPassword", "new_password": "BrandNewPass#123"},
     )
     assert resp.status_code == 401, resp.text
     assert resp.json()["error"]["code"] == "unauthorized"
@@ -170,20 +171,20 @@ async def test_change_password_rejects_wrong_current_password(client, unique_ema
     # The old password must still work -- nothing was changed.
     login_resp = await client.post(
         "/api/v1/auth/login",
-        json={"email": unique_email, "password": "SuperSecret123"},
+        json={"email": unique_email, "password": "SuperSecret#123"},
     )
     assert login_resp.status_code == 200
 
 
 async def test_change_password_succeeds_and_revokes_other_sessions(client, unique_email):
-    data = await register_and_login(client, unique_email, password="SuperSecret123")
+    data = await register_and_login(client, unique_email, password="SuperSecret#123")
     headers = {"Authorization": f"Bearer {data['access_token']}"}
     old_refresh_token = data["refresh_token"]
 
     # A second, separate login session for the same user.
     second_login = await client.post(
         "/api/v1/auth/login",
-        json={"email": unique_email, "password": "SuperSecret123"},
+        json={"email": unique_email, "password": "SuperSecret#123"},
     )
     assert second_login.status_code == 200
     second_refresh_token = second_login.json()["refresh_token"]
@@ -191,7 +192,7 @@ async def test_change_password_succeeds_and_revokes_other_sessions(client, uniqu
     resp = await client.post(
         "/api/v1/auth/change-password",
         headers=headers,
-        json={"current_password": "SuperSecret123", "new_password": "BrandNewPass123"},
+        json={"current_password": "SuperSecret#123", "new_password": "BrandNewPass#123"},
     )
     assert resp.status_code == 200, resp.text
 
@@ -206,22 +207,22 @@ async def test_change_password_succeeds_and_revokes_other_sessions(client, uniqu
     # The old password no longer works; the new one does.
     assert (
         await client.post(
-            "/api/v1/auth/login", json={"email": unique_email, "password": "SuperSecret123"}
+            "/api/v1/auth/login", json={"email": unique_email, "password": "SuperSecret#123"}
         )
     ).status_code == 401
     assert (
         await client.post(
-            "/api/v1/auth/login", json={"email": unique_email, "password": "BrandNewPass123"}
+            "/api/v1/auth/login", json={"email": unique_email, "password": "BrandNewPass#123"}
         )
     ).status_code == 200
 
 
 async def test_change_password_rejects_short_new_password(client, unique_email):
-    data = await register_and_login(client, unique_email, password="SuperSecret123")
+    data = await register_and_login(client, unique_email, password="SuperSecret#123")
     headers = {"Authorization": f"Bearer {data['access_token']}"}
     resp = await client.post(
         "/api/v1/auth/change-password",
         headers=headers,
-        json={"current_password": "SuperSecret123", "new_password": "short"},
+        json={"current_password": "SuperSecret#123", "new_password": "short"},
     )
     assert resp.status_code == 422

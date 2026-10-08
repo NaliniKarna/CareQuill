@@ -99,3 +99,8 @@ family_claim_rate_limit = rate_limit(
     attempts_attr="auth_rate_limit_attempts",
     window_attr="auth_rate_limit_window_seconds",
 )
+contact_rate_limit = rate_limit(
+    "contact",
+    attempts_attr="contact_rate_limit_attempts",
+    window_attr="contact_rate_limit_window_seconds",
+)

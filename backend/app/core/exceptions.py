@@ -103,11 +103,16 @@ def register_exception_handlers(app: FastAPI) -> None:
         # ValueError), which plain `json.dumps` can't serialize.
         # `jsonable_encoder` converts it into a JSON-safe structure the same
         # way FastAPI's own default handler does.
+        errors = jsonable_encoder(exc.errors())
+        # Our own validators (password strength, consent) write messages meant
+        # for the user; show the first one instead of a generic sentence.
+        message = "One or more fields are invalid."
+        for error in errors:
+            if error.get("type") == "value_error" and isinstance(error.get("msg"), str):
+                message = error["msg"].removeprefix("Value error, ")
+                break
         return _error_response(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "validation_error",
-            "One or more fields are invalid.",
-            details=jsonable_encoder(exc.errors()),
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "validation_error", message, details=errors
         )
 
     @app.exception_handler(Exception)

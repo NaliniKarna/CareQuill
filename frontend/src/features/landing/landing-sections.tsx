@@ -1,9 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import axios from "axios";
 import { useState, type FormEvent } from "react";
 import {
+  Bot,
+  Check,
   ChevronDown,
+  Eye,
+  HeartHandshake,
+  Lock,
+  ShieldCheck,
+  Users,
+  X,
+  Loader2,
+  CheckCircle2,
   Clock,
   ClipboardCheck,
   FolderOpen,
@@ -22,13 +33,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { apiClient } from "@/lib/api-client";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 import { FeatureShowcase } from "./feature-showcase";
 import { CROSS_PATTERN } from "./hero-section";
 import type { LandingCopy } from "./i18n";
-
-/** Public contact address; set NEXT_PUBLIC_CONTACT_EMAIL for your deployment. */
-export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "support@carequill.app";
+import { Reveal } from "./motion";
 
 function SectionHeading({
   eyebrow,
@@ -54,39 +65,114 @@ function SectionHeading({
   );
 }
 
-const PROBLEM_ICONS = [FolderOpen, Repeat, FileWarning];
+const PROBLEM_ICONS = [FolderOpen, Repeat, FileWarning, Users];
+const PRINCIPLE_ICONS = [HeartHandshake, Bot, ShieldCheck, Lock];
 
 export function WhySection({ t }: { t: LandingCopy }) {
   return (
-    <section id="features" aria-labelledby="why-title" className="scroll-mt-20 py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <SectionHeading id="why-title" eyebrow={t.why.eyebrow} title={t.why.title} />
-        <p className="mx-auto -mt-6 max-w-3xl text-center text-base leading-relaxed text-muted-foreground sm:text-lg">
-          {t.why.description}
-        </p>
+    <section id="features" aria-labelledby="why-title" className="relative scroll-mt-20 overflow-hidden py-20 lg:py-28">
+      <div
+        aria-hidden
+        className="landing-orb pointer-events-none absolute -top-24 -right-24 size-96 rounded-full bg-[oklch(0.92_0.06_195)] opacity-50 blur-3xl"
+      />
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        <Reveal>
+          <SectionHeading id="why-title" eyebrow={t.why.eyebrow} title={t.why.title} />
+        </Reveal>
+        <Reveal className="mx-auto -mt-6 max-w-3xl rounded-2xl border border-primary/15 bg-accent/50 p-6 text-center shadow-xs sm:p-8">
+          <p className="text-base leading-relaxed text-foreground sm:text-lg">{t.why.description}</p>
+        </Reveal>
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-3">
-          {t.why.problems.map((p, i) => {
-            const Icon = PROBLEM_ICONS[i] ?? TriangleAlert;
-            return (
-              <div key={p.title} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-6 shadow-xs">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
-                  <Icon className="size-5" aria-hidden />
+        {/* Without vs with CareQuill */}
+        <div className="mt-14 grid gap-6 lg:grid-cols-2">
+          <Reveal className="rounded-3xl border border-destructive/20 bg-card p-6 shadow-xs sm:p-8">
+            <h3 className="mb-5 flex items-center gap-2 text-lg font-semibold text-foreground">
+              <span className="flex size-8 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                <X className="size-4" aria-hidden />
+              </span>
+              {t.why.problemsTitle}
+            </h3>
+            <ul className="grid gap-4">
+              {t.why.problems.map((p, i) => {
+                const Icon = PROBLEM_ICONS[i] ?? TriangleAlert;
+                return (
+                  <li key={p.title} className="flex gap-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                      <Icon className="size-5" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="font-semibold text-foreground">{p.title}</p>
+                      <p className="text-sm leading-relaxed text-muted-foreground">{p.text}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Reveal>
+
+          <Reveal
+            delay={120}
+            className="relative overflow-hidden rounded-3xl bg-primary p-6 text-primary-foreground shadow-xl sm:p-8"
+          >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-60 invert"
+              style={{ backgroundImage: CROSS_PATTERN }}
+            />
+            <div className="relative">
+              <h3 className="mb-5 flex items-center gap-2 text-lg font-semibold">
+                <span className="flex size-8 items-center justify-center rounded-full bg-primary-foreground/15">
+                  <Check className="size-4" aria-hidden />
                 </span>
-                <h3 className="font-semibold text-foreground">{p.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{p.text}</p>
-              </div>
-            );
-          })}
+                {t.why.solutionTitle}
+              </h3>
+              <ul className="grid gap-4">
+                {t.why.solutions.map((text) => (
+                  <li key={text} className="flex gap-3 rounded-xl bg-primary-foreground/10 p-4 backdrop-blur-sm">
+                    <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden />
+                    <span className="text-sm leading-relaxed sm:text-base">{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+        </div>
+
+        {/* Principles */}
+        <div className="mt-16">
+          <Reveal>
+            <h3 className="mb-6 flex items-center justify-center gap-2 text-center text-xl font-semibold text-foreground">
+              <Eye className="size-5 text-primary" aria-hidden />
+              {t.why.principlesTitle}
+            </h3>
+          </Reveal>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {t.why.principles.map((p, i) => {
+              const Icon = PRINCIPLE_ICONS[i] ?? ShieldCheck;
+              return (
+                <Reveal key={p.title} delay={i * 90}>
+                  <div className="group h-full rounded-2xl border border-border bg-card p-6 shadow-xs transition duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-xl">
+                    <span className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-accent text-primary transition group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground">
+                      <Icon className="size-6" aria-hidden />
+                    </span>
+                    <h4 className="mb-1.5 font-semibold text-foreground">{p.title}</h4>
+                    <p className="text-sm leading-relaxed text-muted-foreground">{p.text}</p>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
         </div>
 
         <div className="mt-24 lg:mt-32">
-          <SectionHeading
-            id="features-title"
-            eyebrow={t.why.featuresEyebrow}
-            title={t.why.featuresTitle}
-            text={t.why.featuresText}
-          />
+          <Reveal>
+            <SectionHeading
+              id="features-title"
+              eyebrow={t.why.featuresEyebrow}
+              title={t.why.featuresTitle}
+              text={t.why.featuresText}
+            />
+          </Reveal>
           <FeatureShowcase t={t} />
         </div>
       </div>
@@ -166,10 +252,14 @@ type FieldErrors = Partial<Record<"name" | "email" | "message", string>>;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+type SendState = "idle" | "sending" | "sent" | "failed" | "limited";
+
 function ContactForm({ t }: { t: LandingCopy }) {
   const f = t.contact.form;
   const [values, setValues] = useState({ name: "", email: "", message: "" });
+  const [honeypot, setHoneypot] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [state, setState] = useState<SendState>("idle");
 
   function validate(): FieldErrors {
     const e: FieldErrors = {};
@@ -179,16 +269,25 @@ function ContactForm({ t }: { t: LandingCopy }) {
     return e;
   }
 
-  function onSubmit(ev: FormEvent) {
+  async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
+    if (state === "sending") return;
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length) return;
-    // No backend endpoint: hand the message to the visitor's own mail app,
-    // so nothing is stored by CareQuill.
-    const subject = `${f.subject} ${values.name.trim()}`;
-    const body = `${values.message.trim()}\n\n— ${values.name.trim()} <${values.email.trim()}>`;
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setState("sending");
+    try {
+      await apiClient.post("/public/contact", {
+        name: values.name.trim(),
+        email: values.email.trim(),
+        message: values.message.trim(),
+        website: honeypot,
+      });
+      setState("sent");
+      setValues({ name: "", email: "", message: "" });
+    } catch (err) {
+      setState(axios.isAxiosError(err) && err.response?.status === 429 ? "limited" : "failed");
+    }
   }
 
   const field = (key: keyof typeof values) => ({
@@ -210,7 +309,7 @@ function ContactForm({ t }: { t: LandingCopy }) {
     ) : null;
 
   return (
-    <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
+    <form noValidate onSubmit={onSubmit} className="relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="contact-name">{f.name}</Label>
@@ -228,10 +327,43 @@ function ContactForm({ t }: { t: LandingCopy }) {
         <Textarea rows={5} maxLength={2000} placeholder={f.messagePlaceholder} {...field("message")} />
         {err("message")}
       </div>
+      {/* Honeypot: hidden from people, filled in by simple bots */}
+      <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+        <label htmlFor="contact-website">Website</label>
+        <input
+          id="contact-website"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+        />
+      </div>
       <p className="text-xs text-muted-foreground">{f.note}</p>
-      <Button type="submit" size="lg" className="w-full sm:w-fit">
-        <Send />
-        {f.submit}
+      <div aria-live="polite">
+        {state === "sent" && (
+          <p className="flex items-start gap-2 rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
+            <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {f.success}
+          </p>
+        )}
+        {state === "limited" && (
+          <p role="alert" className="rounded-lg bg-warning/15 px-3 py-2 text-sm text-foreground">
+            {f.tooMany}
+          </p>
+        )}
+        {state === "failed" && (
+          <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {f.failed}{" "}
+            <a href={`mailto:${CONTACT_EMAIL}`} className="font-medium underline">
+              {CONTACT_EMAIL}
+            </a>
+          </p>
+        )}
+      </div>
+      <Button type="submit" size="lg" className="w-full sm:w-fit" disabled={state === "sending"}>
+        {state === "sending" ? <Loader2 className="animate-spin" /> : <Send />}
+        {state === "sending" ? f.sending : f.submit}
       </Button>
     </form>
   );
@@ -334,6 +466,8 @@ export function LandingFooter({ t }: { t: LandingCopy }) {
       links: [
         { href: "/login", label: t.nav.login },
         { href: "/register", label: t.nav.signup },
+        { href: "/privacy", label: t.footer.privacy },
+        { href: "/terms", label: t.footer.terms },
       ],
     },
   ];

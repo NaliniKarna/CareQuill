@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
@@ -16,9 +16,17 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { authService } from "@/services/auth-service";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { passwordProblem } from "@/lib/password";
+import { PasswordStrength } from "@/components/shared/password-strength";
 
 const schema = z.object({
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z
+    .string()
+    .min(1, "Enter a new password")
+    .superRefine((value, ctx) => {
+      const problem = passwordProblem(value);
+      if (problem) ctx.addIssue({ code: "custom", message: problem });
+    }),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -30,8 +38,10 @@ function ResetPasswordForm() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const password = useWatch({ control, name: "password" }) ?? "";
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) => authService.resetPassword(token, values.password),
@@ -81,6 +91,7 @@ function ResetPasswordForm() {
           aria-invalid={Boolean(errors.password)}
           {...register("password")}
         />
+        <PasswordStrength password={password} />
         {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
       </div>
       <Button type="submit" disabled={mutation.isPending}>

@@ -8,6 +8,7 @@ from app.api.v1 import (
     audit_logs,
     auth,
     conditions,
+    contact,
     dashboard,
     doctors,
     documents,
@@ -43,6 +44,7 @@ api_router.include_router(health_snapshots.router)
 api_router.include_router(ai_summaries.router)
 api_router.include_router(reports.router)
 api_router.include_router(shared_reports.router)
+api_router.include_router(contact.router)
 api_router.include_router(email_logs.router)
 api_router.include_router(family.router)
 api_router.include_router(preferences.router)
