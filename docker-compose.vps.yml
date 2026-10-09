@@ -1,0 +1,40 @@
+# VPS overlay: puts Caddy (HTTPS, one domain) in front of the app and closes
+# the backend and frontend ports, so the only way in is ports 80 and 443.
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.vps.yml \
+#     --env-file .env.production up -d --build
+#
+# Closing port 8000 matters for security: gunicorn trusts X-Forwarded-For, so
+# a client that could reach it directly could fake its IP and bypass the
+# rate limits. Behind Caddy, the header is always set by Caddy itself.
+# Needs Docker Compose v2.24 or newer (for `!reset`).
+
+services:
+  backend:
+    ports: !reset []
+
+  frontend:
+    ports: !reset []
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: medqueue-caddy
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN must be set (for example carequill.example.com)}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL must be set (certificate expiry notices)}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  caddy_data:
+  caddy_config:

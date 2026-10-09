@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { profileService } from "@/services/profile-service";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { isValidPhone, PHONE_ERROR, PHONE_MAX_LENGTH } from "@/lib/phone";
 import type { HealthProfileInput } from "@/types/api";
 
 const profileSchema = z.object({
@@ -24,10 +25,10 @@ const profileSchema = z.object({
   date_of_birth: z.string().optional().or(z.literal("")),
   gender: z.string().optional().or(z.literal("")),
   blood_group: z.string().optional().or(z.literal("")),
-  phone: z.string().max(30).optional().or(z.literal("")),
+  phone: z.string().refine(isValidPhone, PHONE_ERROR).optional(),
   address: z.string().max(500).optional().or(z.literal("")),
   emergency_contact_name: z.string().max(150).optional().or(z.literal("")),
-  emergency_contact_phone: z.string().max(30).optional().or(z.literal("")),
+  emergency_contact_phone: z.string().refine(isValidPhone, PHONE_ERROR).optional(),
   height: z
     .string()
     .optional()
@@ -181,7 +182,17 @@ export function ProfileForm() {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" type="tel" {...register("phone")} />
+            <Input
+              id="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              maxLength={PHONE_MAX_LENGTH}
+              placeholder="+977 9812345678"
+              aria-invalid={Boolean(errors.phone)}
+              {...register("phone")}
+            />
+            {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="height">Height (cm)</Label>
@@ -211,7 +222,18 @@ export function ProfileForm() {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="emergency_contact_phone">Emergency contact phone</Label>
-            <Input id="emergency_contact_phone" type="tel" {...register("emergency_contact_phone")} />
+            <Input
+              id="emergency_contact_phone"
+              type="tel"
+              inputMode="tel"
+              maxLength={PHONE_MAX_LENGTH}
+              placeholder="+977 9812345678"
+              aria-invalid={Boolean(errors.emergency_contact_phone)}
+              {...register("emergency_contact_phone")}
+            />
+            {errors.emergency_contact_phone && (
+              <p className="text-sm text-destructive">{errors.emergency_contact_phone.message}</p>
+            )}
           </div>
         </CardContent>
       </Card>

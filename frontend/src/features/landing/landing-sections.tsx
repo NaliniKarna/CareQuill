@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import axios from "axios";
 import { useState, type FormEvent } from "react";
@@ -504,6 +505,18 @@ export function LandingFooter({ t }: { t: LandingCopy }) {
             </ul>
           </div>
         ))}
+      </div>
+      <div className="mx-auto flex max-w-7xl justify-end px-4 pb-5 sm:px-6">
+        <span className="rounded-md bg-[#f7f7f7] px-2 py-1">
+          <Image
+            src="/brand/zinob-logo.png"
+            alt="Zinob Inc. Pvt. Ltd."
+            width={338}
+            height={107}
+            unoptimized
+            className="h-7 w-auto"
+          />
+        </span>
       </div>
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-xs sm:px-6 md:flex-row md:items-center md:justify-between">

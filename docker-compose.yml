@@ -15,12 +15,13 @@ x-backend-env: &backend-env
   ALLOWED_UPLOAD_EXTENSIONS: ${ALLOWED_UPLOAD_EXTENSIONS:-.pdf,.png,.jpg,.jpeg}
   EMAIL_BACKEND: ${EMAIL_BACKEND:-console}
   EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-no-reply@medqueue.ai}
-  EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-MedQueue AI}
+  EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-CareQuill}
   SMTP_HOST: ${SMTP_HOST:-localhost}
   SMTP_PORT: ${SMTP_PORT:-1025}
   SMTP_USERNAME: ${SMTP_USERNAME:-}
   SMTP_PASSWORD: ${SMTP_PASSWORD:-}
   SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
+  CONTACT_RECEIVER_EMAIL: ${CONTACT_RECEIVER_EMAIL:-supportcarequill@gmail.com}
   SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
   MAILGUN_API_KEY: ${MAILGUN_API_KEY:-}
   MAILGUN_DOMAIN: ${MAILGUN_DOMAIN:-}
@@ -89,6 +90,7 @@ services:
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}
+      NEXT_PUBLIC_CONTACT_EMAIL: ${NEXT_PUBLIC_CONTACT_EMAIL:-supportcarequill@gmail.com}
     ports:
       - "3000:3000"
     depends_on:

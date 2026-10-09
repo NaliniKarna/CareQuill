@@ -3,6 +3,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.schemas.phone import PhoneNumber
+
 
 class DoctorContactBase(BaseModel):
     name: str = Field(min_length=1, max_length=200)
@@ -12,11 +14,15 @@ class DoctorContactBase(BaseModel):
     clinic_name: str | None = Field(default=None, max_length=200)
 
 
-class DoctorContactCreate(DoctorContactBase):
+class _DoctorContactWrite(DoctorContactBase):
+    phone: PhoneNumber = None
+
+
+class DoctorContactCreate(_DoctorContactWrite):
     pass
 
 
-class DoctorContactUpdate(DoctorContactBase):
+class DoctorContactUpdate(_DoctorContactWrite):
     pass
 
 

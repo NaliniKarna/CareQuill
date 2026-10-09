@@ -1,0 +1,39 @@
+# Reverse proxy for a single-domain VPS deployment (docker-compose.vps.yml).
+# Caddy gets and renews the HTTPS certificate by itself (Let's Encrypt).
+# DOMAIN and ACME_EMAIL come from .env.production.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	# API: patient documents are uploaded here. The app limits files to
+	# MAX_UPLOAD_SIZE_MB (15 by default); this stops oversized bodies early.
+	handle /api/* {
+		request_body {
+			max_size 25MB
+		}
+		reverse_proxy backend:8000
+	}
+
+	# Everything else is the Next.js app.
+	handle {
+		reverse_proxy frontend:3000
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

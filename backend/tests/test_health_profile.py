@@ -91,3 +91,27 @@ async def test_users_cannot_see_each_others_profile(client, unique_email):
     resp_a = await client.get("/api/v1/profile", headers=_auth_headers(user_a["access_token"]))
     assert resp_a.status_code == 200
     assert resp_a.json()["first_name"] == "Alice"
+
+
+@pytest.mark.parametrize("field", ["phone", "emergency_contact_phone"])
+async def test_profile_rejects_invalid_phone_numbers(client, unique_email, field):
+    data = await register_and_login(client, unique_email)
+    headers = _auth_headers(data["access_token"])
+    body = {"first_name": "A", "last_name": "B", field: "not-a-phone"}
+    resp = await client.put("/api/v1/profile", headers=headers, json=body)
+    assert resp.status_code == 422
+
+
+async def test_profile_accepts_valid_phone_numbers(client, unique_email):
+    data = await register_and_login(client, unique_email)
+    headers = _auth_headers(data["access_token"])
+    body = {
+        "first_name": "A",
+        "last_name": "B",
+        "phone": "+977 9812345678",
+        "emergency_contact_phone": "01-4412345",
+    }
+    resp = await client.put("/api/v1/profile", headers=headers, json=body)
+    assert resp.status_code == 200
+    assert resp.json()["phone"] == "+977 9812345678"
+    assert resp.json()["emergency_contact_phone"] == "01-4412345"

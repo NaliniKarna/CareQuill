@@ -4,6 +4,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.phone import PhoneNumber
+
 
 class HealthProfileBase(BaseModel):
     first_name: str = Field(min_length=1, max_length=100)
@@ -20,7 +22,8 @@ class HealthProfileBase(BaseModel):
 
 
 class HealthProfileUpsert(HealthProfileBase):
-    pass
+    phone: PhoneNumber = None
+    emergency_contact_phone: PhoneNumber = None
 
 
 class HealthProfileRead(HealthProfileBase):

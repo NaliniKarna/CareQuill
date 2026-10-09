@@ -72,3 +72,34 @@ async def test_users_cannot_see_each_others_doctors(client, unique_email):
         await client.delete(f"/api/v1/doctors/{doctor_id}", headers=headers_b)
     ).status_code == 404
     assert (await client.get("/api/v1/doctors", headers=headers_b)).json() == []
+
+
+@pytest.mark.parametrize(
+    "phone",
+    ["+977 9812345678", "9812345678", "01-4412345", "(977) 98-1234-5678"],
+)
+async def test_doctor_accepts_valid_phone_numbers(client, unique_email, phone):
+    data = await register_and_login(client, unique_email)
+    headers = _auth_headers(data["access_token"])
+    body = {"name": "Dr. P", "phone": phone}
+    resp = await client.post("/api/v1/doctors", headers=headers, json=body)
+    assert resp.status_code == 201
+    assert resp.json()["phone"] == phone
+
+
+@pytest.mark.parametrize("phone", ["abc", "12345", "98123x4567", "+" + "9" * 16, "98+12345678"])
+async def test_doctor_rejects_invalid_phone_numbers(client, unique_email, phone):
+    data = await register_and_login(client, unique_email)
+    headers = _auth_headers(data["access_token"])
+    body = {"name": "Dr. P", "phone": phone}
+    resp = await client.post("/api/v1/doctors", headers=headers, json=body)
+    assert resp.status_code == 422
+
+
+async def test_doctor_blank_phone_is_stored_as_empty(client, unique_email):
+    data = await register_and_login(client, unique_email)
+    headers = _auth_headers(data["access_token"])
+    body = {"name": "Dr. P", "phone": "  "}
+    resp = await client.post("/api/v1/doctors", headers=headers, json=body)
+    assert resp.status_code == 201
+    assert resp.json()["phone"] is None
